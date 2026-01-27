@@ -40,7 +40,7 @@ services:
       - kafka
       - postgres
     environment:
-      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/pokemon_db
+      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/blue_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - microservices-net
@@ -53,7 +53,7 @@ services:
       - kafka
       - postgres
     environment:
-      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/pokemon_db
+      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/adminLogs_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - microservices-net
@@ -66,7 +66,7 @@ services:
       - kafka
       - postgres
     environment:
-      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/pokemon_db
+      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/red_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - microservices-net
@@ -79,7 +79,7 @@ services:
       - kafka
       - postgres
     environment:
-      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/pokemon_db
+      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/adminLogs_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - microservices-net
@@ -92,7 +92,7 @@ services:
       - kafka
       - postgres
     environment:
-      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/pokemon_db
+      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/blue_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - microservices-net
@@ -105,7 +105,7 @@ services:
       - kafka
       - postgres
     environment:
-      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/pokemon_db
+      DATABASE_URL: postgresql://admin:1234@postgres_db:5432/red_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - microservices-net
@@ -124,4 +124,3 @@ services:
 networks:
   microservices-net:
     driver: bridge
-
