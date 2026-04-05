@@ -1,3 +1,292 @@
+# ============================================================
+#  CONFIGMAPS
+# ============================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: pokemon-drafter
+data:
+  init.sql: |
+    CREATE DATABASE red_db;
+    CREATE DATABASE blue_db;
+    CREATE DATABASE admin_db;
+    CREATE DATABASE keycloak_db;
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: pokemon-drafter
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  REDIS_URL: "redis://redis:6379"
+  KEYCLOAK_URL: "http://keycloak:8080"
+  POKEAPI_BASE_URL: "https://pokeapi.co/api/v2"
+  DATABASE_URL_RED: "postgresql://admin:1234@postgres:5432/red_db"
+  DATABASE_URL_BLUE: "postgresql://admin:1234@postgres:5432/blue_db"
+  DATABASE_URL_ADMIN: "postgresql://admin:1234@postgres:5432/admin_db"
+
+# ============================================================
+#  PERSISTENT VOLUME CLAIMS
+# ============================================================
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: pokemon-drafter
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: pokemon-drafter
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi
+
+# ============================================================
+#  KAFKA
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: kafka
+  ports:
+    - name: broker
+      port: 9092
+      targetPort: 9092
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: apache/kafka:latest
+          ports:
+            - containerPort: 9092
+            - containerPort: 9093
+          env:
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka:9092"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@kafka:9093"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+              value: "0"
+            - name: KAFKA_NUM_PARTITIONS
+              value: "3"
+
+# ============================================================
+#  POSTGRESQL
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "admin"
+            - name: POSTGRES_PASSWORD
+              value: "1234"
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+        - name: init-sql
+          configMap:
+            name: postgres-init-sql
+
+# ============================================================
+#  REDIS  (Cache)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-storage
+              mountPath: /data
+      volumes:
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: redis-pvc
+
+# ============================================================
+#  KEYCLOAK  (Identity Provider)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:latest
+          args: ["start-dev"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: "admin"
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://postgres:5432/keycloak_db"
+            - name: KC_DB_USERNAME
+              value: "admin"
+            - name: KC_DB_PASSWORD
+              value: "1234"
+
+# ============================================================
+#  API GATEWAY  (Spring Boot)
+# ============================================================
+
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,7 +298,8 @@ spec:
     app: gateway-service
   ports:
     - port: 80
-      targetPort: 8000
+      targetPort: 8080
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -28,13 +318,32 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          imagePullPolicy: IfNotPresent
           image: gateway-service:latest
-          env:
-            - name: SPRING_AUTOCONFIGURE_EXCLUDE
-              value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: BACK_RED_URL
+              value: "http://back-red-service:8000"
+            - name: BACK_BLUE_URL
+              value: "http://back-blue-service:8000"
+            - name: POKEMON_SERVICE_URL
+              value: "http://pokemon-service:8000"
+            - name: COMBAT_SERVICE_URL
+              value: "http://combat-service:8000"
+            - name: CHAT_SERVICE_URL
+              value: "http://chat-service:8000"
+            - name: RECOMMENDATION_SERVICE_URL
+              value: "http://recommendation-service:8000"
+            - name: LOGS_SERVICE_URL
+              value: "http://logs-service:8000"
+
+# ============================================================
+#  BACKEND RED  (Java Spring Boot)
+# ============================================================
 
 ---
 apiVersion: v1
@@ -43,12 +352,13 @@ metadata:
   name: back-red-service
   namespace: pokemon-drafter
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: back-red-service
   ports:
-    - port: 80
+    - port: 8000
       targetPort: 8000
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -56,7 +366,7 @@ metadata:
   name: back-red-service
   namespace: pokemon-drafter
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: back-red-service
@@ -67,14 +377,25 @@ spec:
     spec:
       containers:
         - name: back-red-service
-          imagePullPolicy: IfNotPresent
           image: back-red-service:latest
-          env:
-            - name: SPRING_AUTOCONFIGURE_EXCLUDE
-              value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_URL_RED
+            - name: ENCRYPTION_KEY
+              value: "supersecretkey123456"
 
+# ============================================================
+#  BACKEND BLUE  (Java Spring Boot)
+# ============================================================
 
 ---
 apiVersion: v1
@@ -83,12 +404,13 @@ metadata:
   name: back-blue-service
   namespace: pokemon-drafter
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: back-blue-service
   ports:
-    - port: 80
+    - port: 8000
       targetPort: 8000
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -96,7 +418,7 @@ metadata:
   name: back-blue-service
   namespace: pokemon-drafter
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: back-blue-service
@@ -107,124 +429,251 @@ spec:
     spec:
       containers:
         - name: back-blue-service
-          imagePullPolicy: IfNotPresent
           image: back-blue-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: app-config
           env:
-            - name: SPRING_AUTOCONFIGURE_EXCLUDE
-              value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"
-          ports:
-            - containerPort: 8080
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_URL_BLUE
+            - name: ENCRYPTION_KEY
+              value: "supersecretkey123456"
+
+# ============================================================
+#  POKEMON SERVICE  (Java Spring Boot + Redis Cache)
+# ============================================================
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: back-general-service
+  name: pokemon-service
   namespace: pokemon-drafter
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app: back-general-service
+    app: pokemon-service
   ports:
-    - port: 80
+    - port: 8000
       targetPort: 8000
+
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: back-general-service
+  name: pokemon-service
   namespace: pokemon-drafter
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: back-general-service
+      app: pokemon-service
   template:
     metadata:
       labels:
-        app: back-general-service
+        app: pokemon-service
     spec:
       containers:
-        - name: back-general-service
+        - name: pokemon-service
+          image: pokemon-service:latest
           imagePullPolicy: IfNotPresent
-          image: back-general-service:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+# ============================================================
+#  RECOMMENDATION SERVICE  (Java Spring Boot)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation-service
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: recommendation-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-service
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommendation-service
+  template:
+    metadata:
+      labels:
+        app: recommendation-service
+    spec:
+      containers:
+        - name: recommendation-service
+          image: recommendation-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+# ============================================================
+#  COMBAT SERVICE  (Java Spring Boot)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: combat-service
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: combat-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: combat-service
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: combat-service
+  template:
+    metadata:
+      labels:
+        app: combat-service
+    spec:
+      containers:
+        - name: combat-service
+          image: combat-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+# ============================================================
+#  CHAT SERVICE  (Java Spring Boot)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: chat-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      containers:
+        - name: chat-service
+          image: chat-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+# ============================================================
+#  LOGS SERVICE  (Java Spring Boot)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logs-service
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: logs-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logs-service
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logs-service
+  template:
+    metadata:
+      labels:
+        app: logs-service
+    spec:
+      containers:
+        - name: logs-service
+          image: logs-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: app-config
           env:
-            - name: SPRING_AUTOCONFIGURE_EXCLUDE
-              value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"
-          ports:
-            - containerPort: 8080
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_URL_ADMIN
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: front-blue-service
-  namespace: pokemon-drafter
-spec:
-  type: LoadBalancer
-  selector:
-    app: front-blue-service
-  ports:
-    - port: 80
-      targetPort: 8000
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: front-blue-service
-  namespace: pokemon-drafter
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: front-blue-service
-  template:
-    metadata:
-      labels:
-        app: front-blue-service
-    spec:
-      containers:
-        - name: front-blue-service
-          imagePullPolicy: IfNotPresent
-          image: front-blue-service:latest
-          ports:
-            - containerPort: 8080
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: front-red-service
-  namespace: pokemon-drafter
-spec:
-  type: LoadBalancer
-  selector:
-    app: front-red-service
-  ports:
-    - port: 80
-      targetPort: 8000
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: front-red-service
-  namespace: pokemon-drafter
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: front-red-service
-  template:
-    metadata:
-      labels:
-        app: front-red-service
-    spec:
-      containers:
-        - name: front-red-service
-          imagePullPolicy: IfNotPresent
-          image: front-red-service:latest
-          ports:
-            - containerPort: 8080
+# ============================================================
+#  FRONTEND GENERAL  (Angular + Nginx)
+# ============================================================
 
 ---
 apiVersion: v1
@@ -238,7 +687,8 @@ spec:
     app: front-general-service
   ports:
     - port: 80
-      targetPort: 8000
+      targetPort: 80
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -246,7 +696,7 @@ metadata:
   name: front-general-service
   namespace: pokemon-drafter
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: front-general-service
@@ -257,7 +707,89 @@ spec:
     spec:
       containers:
         - name: front-general-service
-          imagePullPolicy: IfNotPresent
           image: front-general-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - containerPort: 80
+
+# ============================================================
+#  FRONTEND RED  (Angular + Nginx)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-red-service
+  namespace: pokemon-drafter
+spec:
+  type: LoadBalancer
+  selector:
+    app: front-red-service
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-red-service
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front-red-service
+  template:
+    metadata:
+      labels:
+        app: front-red-service
+    spec:
+      containers:
+        - name: front-red-service
+          image: front-red-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+
+# ============================================================
+#  FRONTEND BLUE  (Angular + Nginx)
+# ============================================================
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-blue-service
+  namespace: pokemon-drafter
+spec:
+  type: LoadBalancer
+  selector:
+    app: front-blue-service
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-blue-service
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front-blue-service
+  template:
+    metadata:
+      labels:
+        app: front-blue-service
+    spec:
+      containers:
+        - name: front-blue-service
+          image: front-blue-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
