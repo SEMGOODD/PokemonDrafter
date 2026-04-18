@@ -51,7 +51,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
-    command: start-dev
+    command: start-dev --import-realm
     ports:
       - "8080:8080"
     environment:
@@ -61,6 +61,8 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres-db:5432/keycloak_db
       KC_DB_USERNAME: admin
       KC_DB_PASSWORD: 1234
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     depends_on:
       - postgres
     networks:
@@ -90,161 +92,160 @@ services:
       LOGS_SERVICE_URL: http://logs-service:8000
     networks:
       - pokemon-net
+  # # ============================================================
+  # # BACKENDS  (Java Spring Boot)
+  # # ============================================================
+
+  # back-red-service:
+  #   build: ./BackRedService
+  #   container_name: back-red-service
+  #   ports:
+  #     - "8001:8000"
+  #   depends_on:
+  #     - kafka
+  #     - postgres
+  #     - keycloak
+  #   environment:
+  #     DATABASE_URL: postgresql://admin:1234@postgres-db:5432/red_db
+  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #     KEYCLOAK_URL: http://keycloak:8080
+  #     ENCRYPTION_KEY: "${ENCRYPTION_KEY:-supersecretkey123456}"
+  #   networks:
+  #     - pokemon-net
+
+  # back-blue-service:
+  #   build: ./BackBlueService
+  #   container_name: back-blue-service
+  #   ports:
+  #     - "8002:8000"
+  #   depends_on:
+  #     - kafka
+  #     - postgres
+  #     - keycloak
+  #   environment:
+  #     DATABASE_URL: postgresql://admin:1234@postgres-db:5432/blue_db
+  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #     KEYCLOAK_URL: http://keycloak:8080
+  #     ENCRYPTION_KEY: "${ENCRYPTION_KEY:-supersecretkey123456}"
+  #   networks:
+  #     - pokemon-net
+
+  # # ============================================================
+  # #  SHARED SERVICES  (Java Spring Boot)
+  # # ============================================================
+
+  # pokemon-service:
+  #   build: ./PokemonService
+  #   container_name: pokemon-service
+  #   ports:
+  #     - "8003:8000"
+  #   depends_on:
+  #     - kafka
+  #     - redis
+  #   environment:
+  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #     REDIS_URL: redis://redis-cache:6379
+  #     POKEAPI_BASE_URL: https://pokeapi.co/api/v2
+  #   networks:
+  #     - pokemon-net
+
+  # recommendation-service:
+  #   build: ./RecommendationService
+  #   container_name: recommendation-service
+  #   ports:
+  #     - "8004:8000"
+  #   depends_on:
+  #     - kafka
+  #     - redis
+  #   environment:
+  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #     REDIS_URL: redis://redis-cache:6379
+  #   networks:
+  #     - pokemon-net
+
+  # combat-service:
+  #   build: ./CombatService
+  #   container_name: combat-service
+  #   ports:
+  #     - "8005:8000"
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #   networks:
+  #     - pokemon-net
+
+  # chat-service:
+  #   build: ./ChatService
+  #   container_name: chat-service
+  #   ports:
+  #     - "8006:8000"
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #   networks:
+  #     - pokemon-net
+
+  # logs-service:
+  #   build: ./LogsService
+  #   container_name: logs-service
+  #   ports:
+  #     - "8007:8000"
+  #   depends_on:
+  #     - kafka
+  #     - postgres
+  #   environment:
+  #     DATABASE_URL: postgresql://admin:1234@postgres-db:5432/admin_db
+  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #   networks:
+  #     - pokemon-net
+
+  # # ============================================================
+  # #  FRONTENDS  (Angular + Nginx)
+  # # ============================================================
+
+  # front-general-service:
+  #   build: ./FrontGeneralService
+  #   container_name: front-general-service
+  #   ports:
+  #     - "4200:80"
+  #   depends_on:
+  #     - gateway-service
+  #   networks:
+  #     - pokemon-net
+
+  # front-red-service:
+  #   build: ./FrontRedService
+  #   container_name: front-red-service
+  #   ports:
+  #     - "4201:80"
+  #   depends_on:
+  #     - gateway-service
+  #   networks:
+  #     - pokemon-net
+
+  # front-blue-service:
+  #   build: ./FrontBlueService
+  #   container_name: front-blue-service
+  #   ports:
+  #     - "4202:80"
+  #   depends_on:
+  #     - gateway-service
+  #   networks:
+  #     - pokemon-net
 
   # ============================================================
-  #  COLOR-SPECIFIC BACKENDS  (Java Spring Boot)
+  #  VOLUMES
   # ============================================================
-
-  back-red-service:
-    build: ./BackRedService
-    container_name: back-red-service
-    ports:
-      - "8001:8000"
-    depends_on:
-      - kafka
-      - postgres
-      - keycloak
-    environment:
-      DATABASE_URL: postgresql://admin:1234@postgres-db:5432/red_db
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_URL: http://keycloak:8080
-      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-supersecretkey123456}"
-    networks:
-      - pokemon-net
-
-  back-blue-service:
-    build: ./BackBlueService
-    container_name: back-blue-service
-    ports:
-      - "8002:8000"
-    depends_on:
-      - kafka
-      - postgres
-      - keycloak
-    environment:
-      DATABASE_URL: postgresql://admin:1234@postgres-db:5432/blue_db
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_URL: http://keycloak:8080
-      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-supersecretkey123456}"
-    networks:
-      - pokemon-net
-
-  # ============================================================
-  #  SHARED SERVICES  (Java Spring Boot)
-  # ============================================================
-
-  pokemon-service:
-    build: ./PokemonService
-    container_name: pokemon-service
-    ports:
-      - "8003:8000"
-    depends_on:
-      - kafka
-      - redis
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      REDIS_URL: redis://redis-cache:6379
-      POKEAPI_BASE_URL: https://pokeapi.co/api/v2
-    networks:
-      - pokemon-net
-
-  recommendation-service:
-    build: ./RecommendationService
-    container_name: recommendation-service
-    ports:
-      - "8004:8000"
-    depends_on:
-      - kafka
-      - redis
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      REDIS_URL: redis://redis-cache:6379
-    networks:
-      - pokemon-net
-
-  combat-service:
-    build: ./CombatService
-    container_name: combat-service
-    ports:
-      - "8005:8000"
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    networks:
-      - pokemon-net
-
-  chat-service:
-    build: ./ChatService
-    container_name: chat-service
-    ports:
-      - "8006:8000"
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    networks:
-      - pokemon-net
-
-  logs-service:
-    build: ./LogsService
-    container_name: logs-service
-    ports:
-      - "8007:8000"
-    depends_on:
-      - kafka
-      - postgres
-    environment:
-      DATABASE_URL: postgresql://admin:1234@postgres-db:5432/admin_db
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    networks:
-      - pokemon-net
-
-  # ============================================================
-  #  FRONTENDS  (Angular + Nginx)
-  # ============================================================
-
-  front-general-service:
-    build: ./FrontGeneralService
-    container_name: front-general-service
-    ports:
-      - "4200:80"
-    depends_on:
-      - gateway-service
-    networks:
-      - pokemon-net
-
-  front-red-service:
-    build: ./FrontRedService
-    container_name: front-red-service
-    ports:
-      - "4201:80"
-    depends_on:
-      - gateway-service
-    networks:
-      - pokemon-net
-
-  front-blue-service:
-    build: ./FrontBlueService
-    container_name: front-blue-service
-    ports:
-      - "4202:80"
-    depends_on:
-      - gateway-service
-    networks:
-      - pokemon-net
-
-# ============================================================
-#  VOLUMES  (Persistent data across restarts)
-# ============================================================
 
 volumes:
   postgres_data:
   redis_data:
 
-# ============================================================
-#  NETWORK
-# ============================================================
+    # ============================================================
+    #  NETWORK
+    # ============================================================
 
 networks:
   pokemon-net:

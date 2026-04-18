@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: back-red-route
+          uri: ${BACK_RED_URL:http://back-red-service:8000}
+          predicates:
+            - Path=/api/red/**
+        - id: back-blue-route
+          uri: ${BACK_BLUE_URL:http://back-blue-service:8000}
+          predicates:
+            - Path=/api/blue/**
+        - id: pokemon-route
+          uri: ${POKEMON_SERVICE_URL:http://pokemon-service:8000}
+          predicates:
+            - Path=/api/pokemon/**
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL}/realms/pokemon-drafter
+          jwk-set-uri: ${KEYCLOAK_URL}/realms/pokemon-drafter/protocol/openid-connect/certs
