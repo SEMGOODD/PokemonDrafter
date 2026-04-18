@@ -117,6 +117,18 @@ graph TB
 
 ---
 
+## Per-service Documentation
+
+Each microservice maintains its own README detailing its API, endpoints, configuration and internal architecture.
+
+| Service | Documentation |
+|---|---|
+| pokemon-service | [PokemonService/README.md](PokemonService/README.md) |
+
+> Add a row here whenever a new service ships its README.
+
+---
+
 ## Deployment
 
 ### Docker Compose (local dev)
