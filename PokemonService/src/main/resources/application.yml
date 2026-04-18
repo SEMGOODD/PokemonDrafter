@@ -1,0 +1,12 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: pokemon-service
+  data:
+    redis:
+      url: ${REDIS_URL}
+
+pokeapi:
+  base-url: ${POKEAPI_BASE_URL}
