@@ -29,9 +29,47 @@ data:
   DATABASE_URL_BLUE: "postgresql://admin:1234@postgres:5432/blue_db"
   DATABASE_URL_ADMIN: "postgresql://admin:1234@postgres:5432/admin_db"
 
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  namespace: pokemon-drafter
+data:
+  realm-export.json: |
+    {"realm":"pokemon-drafter",
+    "enabled":true,
+    "displayName":"Pokemon Drafter",
+    "registrationAllowed":false,
+    "loginWithEmailAllowed":true,
+    "duplicateEmailsAllowed":false,
+    "resetPasswordAllowed":false,
+    "editUsernameAllowed":false,
+    "bruteForceProtected":false,
+    "sslRequired":"none",
+    "accessTokenLifespan":3600,
+    "ssoSessionIdleTimeout":1800,
+    "ssoSessionMaxLifespan":36000,
+    "roles":{"realm":[{"name":"red_player","description":"Red team player role","composite":false,"clientRole":false},{"name":"blue_player","description":"Blue team player role","composite":false,"clientRole":false},{"name":"admin","description":"Administrator role","composite":false,"clientRole":false}]},"clients":[{"clientId":"gateway-client","name":"API Gateway Client","enabled":true,"clientAuthenticatorType":"client-secret","secret":"gateway-secret-key","redirectUris":["http://gateway-service/*"],"webOrigins":["http://gateway-service"],"publicClient":false,"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"serviceAccountsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email"]},{"clientId":"frontend-client","name":"Frontend Client","enabled":true,"publicClient":true,"redirectUris":["http://front-general-service/*","http://front-red-service/*","http://front-blue-service/*","http://pokemon-drafter.local/*"],"webOrigins":["http://front-general-service","http://front-red-service","http://front-blue-service","http://pokemon-drafter.local"],"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email"]}],"users":[{"username":"red_player1","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player1","email":"red_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"red_player2","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player2","email":"red_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"blue_player1","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player1","email":"blue_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"blue_player2","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player2","email":"blue_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"admin","enabled":true,"emailVerified":true,"firstName":"Admin","lastName":"User","email":"admin@pokemon-drafter.local","credentials":[{"type":"password","value":"admin","temporary":false}],"realmRoles":["admin","default-roles-pokemon-drafter"]}]}
+
+
+
 # ============================================================
 #  PERSISTENT VOLUME CLAIMS
 # ============================================================
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-pvc
+  namespace: pokemon-drafter
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 
 ---
 apiVersion: v1
@@ -58,6 +96,54 @@ spec:
   resources:
     requests:
       storage: 256Mi
+
+
+# ============================================================
+#  INGRESS
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pokemon-drafter-ingress
+  namespace: pokemon-drafter
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: pokemon-drafter.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: front-general-service
+            port:
+              number: 80
+      - path: /red
+        pathType: Prefix
+        backend:
+          service:
+            name: front-red-service
+            port:
+              number: 80
+      - path: /blue
+        pathType: Prefix
+        backend:
+          service:
+            name: front-blue-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service
+            port:
+              number: 80
+
 
 # ============================================================
 #  KAFKA
@@ -122,7 +208,14 @@ spec:
             - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
               value: "0"
             - name: KAFKA_NUM_PARTITIONS
-              value: "3"
+              value: "1"
+          volumeMounts:
+            - name: kafka-storage
+              mountPath: /var/lib/kafka/data
+      volumes:
+        - name: kafka-storage
+          persistentVolumeClaim:
+            claimName: kafka-pvc
 
 # ============================================================
 #  POSTGRESQL
@@ -265,7 +358,7 @@ spec:
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:latest
-          args: ["start-dev"]
+          args: ["start-dev", "--import-realm"]
           ports:
             - containerPort: 8080
           env:
@@ -281,6 +374,13 @@ spec:
               value: "admin"
             - name: KC_DB_PASSWORD
               value: "1234"
+          volumeMounts:
+            - name: keycloak-realm
+              mountPath: /opt/keycloak/data/import
+      volumes:
+        - name: keycloak-realm
+          configMap:
+            name: keycloak-realm
 
 # ============================================================
 #  API GATEWAY  (Spring Boot)
@@ -340,6 +440,12 @@ spec:
               value: "http://recommendation-service:8000"
             - name: LOGS_SERVICE_URL
               value: "http://logs-service:8000"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
 
 # ============================================================
 #  BACKEND RED  (Java Spring Boot)
@@ -392,6 +498,12 @@ spec:
                   key: DATABASE_URL_RED
             - name: ENCRYPTION_KEY
               value: "supersecretkey123456"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
 
 # ============================================================
 #  BACKEND BLUE  (Java Spring Boot)
@@ -444,6 +556,12 @@ spec:
                   key: DATABASE_URL_BLUE
             - name: ENCRYPTION_KEY
               value: "supersecretkey123456"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
 
 # ============================================================
 #  POKEMON SERVICE  (Java Spring Boot + Redis Cache)
@@ -488,6 +606,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
 
 # ============================================================
 #  RECOMMENDATION SERVICE  (Java Spring Boot)
@@ -532,6 +656,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
 
 # ============================================================
 #  COMBAT SERVICE  (Java Spring Boot)
@@ -576,6 +706,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
 
 # ============================================================
 #  CHAT SERVICE  (Java Spring Boot)
@@ -620,6 +756,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
 
 # ============================================================
 #  LOGS SERVICE  (Java Spring Boot)
@@ -670,6 +812,12 @@ spec:
                 configMapKeyRef:
                   name: app-config
                   key: DATABASE_URL_ADMIN
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
 
 # ============================================================
 #  FRONTEND GENERAL  (Angular + Nginx)
@@ -682,7 +830,7 @@ metadata:
   name: front-general-service
   namespace: pokemon-drafter
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: front-general-service
   ports:
@@ -723,7 +871,7 @@ metadata:
   name: front-red-service
   namespace: pokemon-drafter
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: front-red-service
   ports:
@@ -764,7 +912,7 @@ metadata:
   name: front-blue-service
   namespace: pokemon-drafter
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: front-blue-service
   ports:
