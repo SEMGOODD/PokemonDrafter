@@ -17,6 +17,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 package-lock.json.bak
+tmp/
+out-tsc/
+bazel-out/
+coverage/
+typings/
+__screenshots__/
+.sass-cache/
+connect.lock
 
 ### Logs ###
 *.log
@@ -51,6 +59,12 @@ bin/
 
 ### IDE - VS Code ###
 .vscode/
+
+### IDE - autres (Cloud9, Sublime, Eclipse launchers, local history) ###
+.c9/
+*.sublime-workspace
+*.launch
+.history/
 
 ### IDE - NetBeans ###
 /nbproject/private/

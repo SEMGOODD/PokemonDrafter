@@ -1,5 +1,6 @@
 package com.example.pokemon.mapper;
 
+import com.example.pokemon.model.NameIndexEntry;
 import com.example.pokemon.model.Pokemon;
 import com.example.pokemon.model.PokemonStats;
 import com.example.pokemon.model.PokemonSummary;
@@ -16,6 +17,7 @@ import java.util.regex.Pattern;
 public class PokeApiMapper {
 
 	private static final String LANGUAGE_EN = "en";
+	private static final String LANGUAGE_FR = "fr";
 	private static final String HABITAT_UNKNOWN = "unknown";
 	private static final String DESCRIPTION_UNKNOWN = "";
 
@@ -33,6 +35,7 @@ public class PokeApiMapper {
 	// PokeAPI URLs follow the form .../<resource>/{id}/ ; these regexes extract the id segment.
 	private static final Pattern POKEMON_URL_ID = Pattern.compile("/pokemon/(\\d+)/?$");
 	private static final Pattern SPECIES_URL_ID = Pattern.compile("/pokemon-species/(\\d+)/?$");
+	private static final Pattern SPECIES_URL_ID_ANYWHERE = Pattern.compile("/pokemon-species/(\\d+)");
 
 	public Pokemon toPokemon(JsonNode pokemonNode, Species species) {
 		int id = pokemonNode.get("id").asInt();
@@ -64,6 +67,29 @@ public class PokeApiMapper {
 			throw new IllegalStateException("Cannot extract species id from URL: " + url);
 		}
 		return Integer.parseInt(matcher.group(1));
+	}
+
+	public List<NameIndexEntry> extractNameIndexFromSpeciesListNode(JsonNode speciesListNode) {
+		List<NameIndexEntry> entries = new ArrayList<>();
+		for (JsonNode result : speciesListNode.path("results")) {
+			String url = result.path("url").asString();
+			Matcher matcher = SPECIES_URL_ID_ANYWHERE.matcher(url);
+			if (matcher.find()) {
+				int id = Integer.parseInt(matcher.group(1));
+				String nameEn = result.path("name").asString();
+				entries.add(new NameIndexEntry(id, nameEn, null));
+			}
+		}
+		return entries;
+	}
+
+	public String extractFrenchNameFromSpeciesNode(JsonNode speciesNode) {
+		for (JsonNode entry : speciesNode.path("names")) {
+			if (LANGUAGE_FR.equals(entry.path("language").path("name").asString())) {
+				return entry.path("name").asString();
+			}
+		}
+		return null;
 	}
 
 	public List<Integer> extractPokemonIdsFromTypeNode(JsonNode typeNode) {

@@ -15,27 +15,32 @@ public class PokemonService {
 	private final PokeApiClient pokeApiClient;
 	private final PokeApiMapper mapper;
 	private final SpeciesService speciesService;
+	private final PokemonNameIndexService nameIndexService;
 
 	public PokemonService(
 			PokemonCacheRepository cache,
 			PokeApiClient pokeApiClient,
 			PokeApiMapper mapper,
-			SpeciesService speciesService
+			SpeciesService speciesService,
+			PokemonNameIndexService nameIndexService
 	) {
 		this.cache = cache;
 		this.pokeApiClient = pokeApiClient;
 		this.mapper = mapper;
 		this.speciesService = speciesService;
+		this.nameIndexService = nameIndexService;
 	}
 
 	public Pokemon getById(int id) {
-		return cache.findById(id).orElseGet(() -> fetchAndCache(String.valueOf(id)));
+		Pokemon canonical = cache.findById(id).orElseGet(() -> fetchAndCache(String.valueOf(id)));
+		return withFrenchNameIfAvailable(canonical);
 	}
 
 	public Pokemon getByName(String name) {
-		return cache.findIdByName(name)
+		Pokemon canonical = cache.findIdByName(name)
 				.flatMap(cache::findById)
 				.orElseGet(() -> fetchAndCache(name.toLowerCase()));
+		return withFrenchNameIfAvailable(canonical);
 	}
 
 	private Pokemon fetchAndCache(String idOrName) {
@@ -45,5 +50,23 @@ public class PokemonService {
 		Pokemon pokemon = mapper.toPokemon(pokemonNode, species);
 		cache.save(pokemon);
 		return pokemon;
+	}
+
+	private Pokemon withFrenchNameIfAvailable(Pokemon pokemon) {
+		String nameFr = nameIndexService.getFrenchName(pokemon.id());
+		if (nameFr == null || nameFr.isBlank()) {
+			return pokemon;
+		}
+		return new Pokemon(
+				pokemon.id(),
+				nameFr,
+				pokemon.types(),
+				pokemon.height(),
+				pokemon.weight(),
+				pokemon.stats(),
+				pokemon.description(),
+				pokemon.habitat(),
+				pokemon.sprite()
+		);
 	}
 }

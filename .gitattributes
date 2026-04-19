@@ -1,0 +1,25 @@
+# Normalisation des fins de ligne pour tout le repo.
+# Empeche l'ambiguite CRLF/LF selon la machine de chaque contributeur.
+
+# Comportement par defaut : Git detecte texte/binaire, normalise en LF dans l'objet Git.
+* text=auto
+
+# Scripts shell : doivent etre en LF (executes dans des conteneurs Linux).
+*.sh text eol=lf
+gradlew text eol=lf
+
+# Scripts Windows : doivent etre en CRLF (executes par cmd.exe).
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Fichiers binaires : pas de normalisation, pas de diff texte.
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tgz binary

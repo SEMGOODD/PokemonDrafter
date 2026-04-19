@@ -34,7 +34,10 @@ services:
       POSTGRES_PASSWORD: 1234
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - type: bind
+        source: ./init.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        read_only: true
     networks:
       - pokemon-net
 
@@ -62,7 +65,10 @@ services:
       KC_DB_USERNAME: admin
       KC_DB_PASSWORD: 1234
     volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - type: bind
+        source: ./keycloak/realm-export.json
+        target: /opt/keycloak/data/import/realm-export.json
+        read_only: true
     depends_on:
       - postgres
     networks:
@@ -134,20 +140,20 @@ services:
   # #  SHARED SERVICES  (Java Spring Boot)
   # # ============================================================
 
-  # pokemon-service:
-  #   build: ./PokemonService
-  #   container_name: pokemon-service
-  #   ports:
-  #     - "8003:8000"
-  #   depends_on:
-  #     - kafka
-  #     - redis
-  #   environment:
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #     REDIS_URL: redis://redis-cache:6379
-  #     POKEAPI_BASE_URL: https://pokeapi.co/api/v2
-  #   networks:
-  #     - pokemon-net
+  pokemon-service:
+    build: ./PokemonService
+    container_name: pokemon-service
+    ports:
+      - "8003:8000"
+    depends_on:
+      - kafka
+      - redis
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_URL: redis://redis-cache:6379
+      POKEAPI_BASE_URL: https://pokeapi.co/api/v2
+    networks:
+      - pokemon-net
 
   # recommendation-service:
   #   build: ./RecommendationService

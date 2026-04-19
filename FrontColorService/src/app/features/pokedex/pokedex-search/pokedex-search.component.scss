@@ -1,0 +1,130 @@
+.pokedex {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pokedex__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pokedex__title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.pokedex__subtitle {
+  color: #666666;
+  margin: 0;
+}
+
+.pokedex__form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.pokedex__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pokedex__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #333333;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pokedex__field input,
+.pokedex__field select {
+  padding: 0.65rem 0.9rem;
+  border: 2px solid #000000;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.pokedex__field input:focus,
+.pokedex__field select:focus {
+  outline: 3px solid var(--theme-color);
+  outline-offset: 2px;
+}
+
+.pokedex__field select {
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.pokedex__state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #666666;
+  background: #fafafa;
+  border: 2px dashed #cccccc;
+  border-radius: 0.75rem;
+}
+
+.pokedex__state--error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.pokedex__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.pokedex__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem 0 0;
+}
+
+.pokedex__pagination button {
+  padding: 0.6rem 1.2rem;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background: #111111;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.pokedex__pagination button:hover:not(:disabled) {
+  background: #000000;
+  transform: translateY(-1px);
+}
+
+.pokedex__pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pokedex__page {
+  font-weight: 600;
+  color: #333333;
+}
+
+@media (max-width: 640px) {
+  .pokedex__form {
+    grid-template-columns: 1fr;
+  }
+  .pokedex__title {
+    font-size: 2rem;
+  }
+}

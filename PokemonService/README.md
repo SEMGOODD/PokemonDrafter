@@ -23,7 +23,7 @@ Réponse :
 ```json
 {
   "id": 25,
-  "name": "pikachu",
+  "name": "Pikachu",
   "types": ["electric"],
   "height": 4,
   "weight": 60,
@@ -41,6 +41,8 @@ Réponse :
 }
 ```
 
+Le champ `name` renvoie le nom **français** s'il est connu par l'index (voir [Index des noms](#index-des-noms-prefix-search--fr)) ; sinon fallback sur le nom anglais canonique de PokeAPI. L'`id` et le reste de la fiche sont identiques quelle que soit la langue.
+
 Pour les formes alternatives (Mega, Gigantamax, variants régionaux), `description` et `habitat` proviennent de l'espèce de base. Exemple : Charizard-Mega-Y (id 10035) hérite de la description de Charizard (species id 6).
 
 ### `GET /pokemon/{id}/types`
@@ -54,11 +56,11 @@ curl http://localhost:8003/pokemon/25/types
 
 ### `GET /pokemon/search`
 
-Recherche paginée par nom et/ou type(s).
+Recherche paginée par préfixe de nom FR et/ou par type(s).
 
 | Paramètre | Type | Défaut | Description |
 |---|---|---|---|
-| `name` | string | - | Recherche exacte par nom (court-circuit, retourne 1 résultat max) |
+| `name` | string | - | **Préfixe** de nom français (case-insensitive). Ne matche pas les noms anglais — cohérence avec le nom affiché dans la réponse |
 | `type1` | string | - | Filtre type 1 (`fire`, `water`, ...) |
 | `type2` | string | - | Filtre type 2, combiné en intersection avec `type1` |
 | `page` | int | 0 | Numéro de page (0-indexé) |
@@ -67,10 +69,16 @@ Recherche paginée par nom et/ou type(s).
 Exemples :
 
 ```bash
-# Par nom (exact, case-insensitive)
-curl 'http://localhost:8003/pokemon/search?name=pikachu'
+# Préfixe FR (matche Piafabec, Pikachu, Pichu, Pifeuil, Pingoléon, ...)
+curl 'http://localhost:8003/pokemon/search?name=pi'
 
-# Par un type
+# Autre préfixe FR (matche Sylveon/Nymphali)
+curl 'http://localhost:8003/pokemon/search?name=Nymph'
+
+# Combinaison nom FR + type (intersection)
+curl 'http://localhost:8003/pokemon/search?name=Drac&type1=flying'
+
+# Par un type seul
 curl 'http://localhost:8003/pokemon/search?type1=fire&pageSize=5'
 
 # Intersection de deux types
@@ -83,20 +91,23 @@ Réponse (extrait) :
 [
   {
     "id": 6,
-    "name": "charizard",
+    "name": "Dracaufeu",
     "types": ["fire", "flying"],
     "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png"
   },
   {
     "id": 146,
-    "name": "moltres",
+    "name": "Sulfura",
     "types": ["fire", "flying"],
     "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/146.png"
   }
 ]
 ```
 
-Renvoie une liste vide si aucun filtre n'est fourni.
+Comportement :
+- Préfixe non reconnu → HTTP 200 avec `[]` (pas d'erreur 500 sur "pokémon inconnu").
+- Aucun filtre fourni → `[]`.
+- Le champ `name` renvoyé est le nom **FR** si connu par l'index, sinon fallback EN.
 
 ### `GET /types/effectiveness`
 
@@ -129,6 +140,23 @@ Utilisé par `combat-service` pour calculer l'avantage selon la formule du cahie
 
 ---
 
+## Index des noms (prefix search + FR)
+
+Pour supporter la recherche par préfixe et par nom FR, le service maintient un index `{id, nameEn, nameFr}` pour les ~1025 espèces Pokémon, construit au premier démarrage puis mis en cache Redis (TTL 30 jours).
+
+**Construction** (déclenchée par `ApplicationReadyEvent`) :
+1. Un appel à `GET /pokemon-species?limit=20000` récupère toute la liste (id + nom EN, ~1s).
+2. Pour chaque espèce, un fetch parallélisé de `/pokemon-species/{id}` extrait le nom FR (virtual threads Java 21 + sémaphore `max 10` requêtes simultanées, ~30s sur connexion normale).
+3. L'index final est sérialisé en JSON et stocké dans Redis sous la clé `pokemon:name-index`.
+
+**Démarrages suivants** : l'index est chargé depuis Redis en une opération, aucun appel PokeAPI.
+
+**Recherche** : `PokemonNameIndexService.findIdsByPrefix(prefix, max)` itère l'index et retourne tous les ids dont le **nom FR** commence par `prefix` (insensible à la casse). Le nom EN n'est pas consulté pour le matching — ça garantit que le nom affiché dans la réponse commence toujours par le préfixe saisi. La liste d'ids est ensuite paginée et chaque id résolu en `PokemonSummary` via `PokemonService.getById`.
+
+**Tolérance aux pannes** : si une espèce renvoie 404/500 au moment de l'enrichissement FR, elle reste dans l'index avec `nameFr=null` et devient non-matchable par recherche (filtrable uniquement par type). Si un id donné échoue au résolveur final, il est filtré de la page renvoyée plutôt que de faire planter toute la recherche.
+
+---
+
 ## Stratégie de cache
 
 Pattern **cache-aside** (lazy) sur Redis. Le premier appel paie le coût d'un fetch PokeAPI, les suivants sont servis directement depuis Redis.
@@ -137,6 +165,7 @@ Pattern **cache-aside** (lazy) sur Redis. Le premier appel paie le coût d'un fe
 |---|---|---|
 | `pokemon:{id}` | JSON `Pokemon` complet | 7 jours |
 | `pokemon:name:{name}` | id (string) — index de résolution | 7 jours |
+| `pokemon:name-index` | JSON `List<NameIndexEntry>` — index `{id, nameEn, nameFr}` des ~1025 espèces | 30 jours |
 | `species:{id}` | JSON `Species` (description + habitat) — partagé entre toutes les variants d'un même Pokémon de base | 7 jours |
 | `type:{name}:pokemon` | Liste d'ids du type | 7 jours |
 | `types:effectiveness` | Matrice complète | 30 jours |
@@ -192,7 +221,11 @@ cd PokemonService
 ./gradlew test
 ```
 
-17 tests unitaires couvrant le mapper PokeAPI, la logique de recherche (intersection, pagination, recherche par nom) et l'orchestration du cache-aside.
+Tests unitaires couvrant :
+- mapper PokeAPI (extraction noms FR, index espèces, stats, types, sprite),
+- recherche par préfixe (EN et FR), intersection nom × type, pagination, cas "aucun résultat",
+- localisation FR du champ `name` dans les réponses de `PokemonService`,
+- orchestration du cache-aside (cache hit, cache miss, propagation espèces).
 
 ---
 
