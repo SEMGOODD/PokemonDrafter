@@ -1,9 +1,6 @@
 services:
 
-  # ============================================================
   #  INFRASTRUCTURE
-  # ============================================================
-
   kafka:
     image: apache/kafka:latest
     container_name: kafka
@@ -74,9 +71,7 @@ services:
     networks:
       - pokemon-net
 
-  # ============================================================
-  #  API GATEWAY  (Spring Boot)
-  # ============================================================
+  # API GATEWAY 
 
   gateway-service:
     build: ./APIGatewayService
@@ -98,9 +93,7 @@ services:
       LOGS_SERVICE_URL: http://logs-service:8000
     networks:
       - pokemon-net
-  # # ============================================================
-  # # BACKENDS  (Java Spring Boot)
-  # # ============================================================
+  # # BACKENDS 
 
   # back-red-service:
   #   build: ./BackRedService
@@ -136,9 +129,7 @@ services:
   #   networks:
   #     - pokemon-net
 
-  # # ============================================================
-  # #  SHARED SERVICES  (Java Spring Boot)
-  # # ============================================================
+  # # SHARED SERVICES 
 
   pokemon-service:
     build: ./PokemonService
@@ -207,9 +198,7 @@ services:
   #   networks:
   #     - pokemon-net
 
-  # # ============================================================
-  # #  FRONTENDS  (Angular + Nginx)
-  # # ============================================================
+  # # FRONTENDS  (Angular + Nginx)
 
   # front-general-service:
   #   build: ./FrontGeneralService
@@ -241,18 +230,21 @@ services:
   #   networks:
   #     - pokemon-net
 
-  # ============================================================
-  #  VOLUMES
-  # ============================================================
-
+  # Mailpit fake SMTP server for keycloak
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - pokemon-net
+  #  Volumes
 volumes:
   postgres_data:
   redis_data:
 
-    # ============================================================
-    #  NETWORK
-    # ============================================================
-
+    # Network
 networks:
   pokemon-net:
     driver: bridge
