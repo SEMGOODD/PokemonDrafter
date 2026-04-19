@@ -125,20 +125,20 @@ services:
 
   # # SHARED SERVICES 
 
-  # pokemon-service:
-  #   build: ./PokemonService
-  #   container_name: pokemon-service
-  #   ports:
-  #     - "8003:8000"
-  #   depends_on:
-  #     - kafka
-  #     - redis
-  #   environment:
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #     REDIS_URL: redis://redis-cache:6379
-  #     POKEAPI_BASE_URL: https://pokeapi.co/api/v2
-  #   networks:
-  #     - pokemon-net
+  pokemon-service:
+    build: ./PokemonService
+    container_name: pokemon-service
+    ports:
+      - "8003:8000"
+    depends_on:
+      - kafka
+      - redis
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_URL: redis://redis-cache:6379
+      POKEAPI_BASE_URL: https://pokeapi.co/api/v2
+    networks:
+      - pokemon-net
 
   # recommendation-service:
   #   build: ./RecommendationService
@@ -154,17 +154,24 @@ services:
   #   networks:
   #     - pokemon-net
 
-  # combat-service:
-  #   build: ./CombatService
-  #   container_name: combat-service
-  #   ports:
-  #     - "8005:8000"
-  #   depends_on:
-  #     - kafka
-  #   environment:
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #   networks:
-  #     - pokemon-net
+  combat-service:
+    build: ./CombatService
+    container_name: combat-service
+    ports:
+      - "8005:8000"
+    depends_on:
+      - kafka
+      - postgres
+      - pokemon-service
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      POKEMON_SERVICE_URL: http://pokemon-service:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      DATABASE_URL: jdbc:postgresql://postgres-db:5432/combat_db
+      DATABASE_USER: admin
+      DATABASE_PASSWORD: 1234
+    networks:
+      - pokemon-net
 
   # chat-service:
   #   build: ./ChatService
@@ -194,15 +201,15 @@ services:
 
   # # FRONTENDS  (Angular + Nginx)
 
-  # front-general-service:
-  #   build: ./FrontGeneralService
-  #   container_name: front-general-service
-  #   ports:
-  #     - "4200:80"
-  #   depends_on:
-  #     - gateway-service
-  #   networks:
-  #     - pokemon-net
+  front-general-service:
+    build: ./FrontGeneralService
+    container_name: front-general-service
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway-service
+    networks:
+      - pokemon-net
 
   # front-red-service:
   #   build: ./FrontRedService

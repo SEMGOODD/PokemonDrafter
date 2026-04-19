@@ -19,6 +19,10 @@ spring:
           uri: ${POKEMON_SERVICE_URL:http://pokemon-service:8000}
           predicates:
             - Path=/api/pokemon/**
+        - id: combat-route
+          uri: ${COMBAT_SERVICE_URL:http://combat-service:8000}
+          predicates:
+            - Path=/api/combat/**
   security:
     oauth2:
       resourceserver:
