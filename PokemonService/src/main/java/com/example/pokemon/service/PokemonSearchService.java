@@ -13,6 +13,8 @@ import java.util.Set;
 @Service
 public class PokemonSearchService {
 
+	private static final int VARIANT_FORM_ID_THRESHOLD = 10000;
+
 	private final PokemonService pokemonService;
 	private final TypePokemonListService typePokemonListService;
 	private final PokemonNameIndexService nameIndexService;
@@ -53,14 +55,23 @@ public class PokemonSearchService {
 		if (!hasType1 && !hasType2) {
 			return Collections.emptyList();
 		}
+		List<Integer> ids;
 		if (hasType1 && hasType2) {
-			return intersect(
+			ids = intersect(
 					typePokemonListService.getPokemonIdsForType(type1),
 					typePokemonListService.getPokemonIdsForType(type2)
 			);
+		} else {
+			String singleType = hasType1 ? type1 : type2;
+			ids = typePokemonListService.getPokemonIdsForType(singleType);
 		}
-		String singleType = hasType1 ? type1 : type2;
-		return typePokemonListService.getPokemonIdsForType(singleType);
+		return filterOutVariantForms(ids);
+	}
+
+	private List<Integer> filterOutVariantForms(List<Integer> ids) {
+		return ids.stream()
+				.filter(id -> id < VARIANT_FORM_ID_THRESHOLD)
+				.toList();
 	}
 
 	private List<Integer> intersectWithTypeFilter(List<Integer> nameCandidates, String type1, String type2) {

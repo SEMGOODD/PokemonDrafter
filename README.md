@@ -213,6 +213,21 @@ kubectl apply -f k8s/manifest.yml -n pokemon-drafter
 
 ---
 
+## Emails transactionnels (dev : Mailpit)
+
+Keycloak envoie des emails dans plusieurs flows : réinitialisation de mot de passe, vérification d'email, actions utilisateur (`execute-actions-email`). En **dev local**, ces emails sont **interceptés par Mailpit** — un faux serveur SMTP qui capture tout dans une UI web consultable.
+
+- **Serveur SMTP configuré** dans `keycloak/realm-export.json` → `smtpServer.host = mailpit:1025` (réseau Docker interne)
+- **Inbox** : `http://localhost:8025` (port Mailpit UI)
+- **Aucun email ne sort vers Internet** tant que la config pointe sur `mailpit`
+- Tu peux donc utiliser des adresses fictives comme `red_player1@pokemon-drafter.local` sans risque
+
+**En prod** : remplacer le bloc `smtpServer` du realm par les credentials d'un vrai SMTP (Gmail SMTP, SendGrid, SES, etc.) et supprimer le service `mailpit` du `docker-compose.yml`.
+
+> ⚠️ Si tu modifies `realm-export.json` (smtpServer, users, clients…), Keycloak ne ré-importe **qu'au premier démarrage** d'une BDD vide. Pour appliquer les changements : `docker compose down -v && docker compose up --build`.
+
+---
+
 ## Authentification par fonctionnalité
 
 Toutes les routes derrière la gateway ne sont pas identiques côté auth. Résumé :

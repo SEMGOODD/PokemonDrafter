@@ -74,6 +74,9 @@ const POKEMON_ID_PAD_LENGTH = 3;
       font-weight: 700;
       margin: 0;
       text-transform: capitalize;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .card__types {
       display: flex;

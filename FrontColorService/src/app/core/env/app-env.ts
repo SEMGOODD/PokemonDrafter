@@ -8,6 +8,7 @@ export interface AppEnv {
   KEYCLOAK_URL: string;
   KEYCLOAK_REALM: string;
   KEYCLOAK_CLIENT_ID: string;
+  FRONT_GENERAL_URL: string;
 }
 
 declare global {

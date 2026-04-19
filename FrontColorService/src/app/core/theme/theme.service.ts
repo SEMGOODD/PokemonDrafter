@@ -13,15 +13,11 @@ export class ThemeService {
   private readonly appRef = inject(ApplicationRef);
 
   private readonly loveActive = signal(false);
-  private readonly authenticated = signal(false);
   private recentClicks: number[] = [];
 
   readonly theme = computed<Theme>(() => {
     if (this.loveActive()) {
       return 'love';
-    }
-    if (!this.authenticated()) {
-      return 'neutral';
     }
     return this.env.COLOR;
   });
@@ -34,19 +30,8 @@ export class ThemeService {
     return 'honor';
   });
 
-  readonly isAuthenticated = this.authenticated.asReadonly();
-
   constructor() {
     this.writeThemeAttribute();
-  }
-
-  setAuthenticated(value: boolean): void {
-    if (this.authenticated() === value) {
-      return;
-    }
-    this.transitionTheme(() => {
-      this.authenticated.set(value);
-    });
   }
 
   registerPokeballClick(): void {

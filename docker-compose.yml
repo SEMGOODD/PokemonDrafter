@@ -84,6 +84,9 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: pokemon-drafter
+      KEYCLOAK_ADMIN_USERNAME: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
       BACK_RED_URL: http://back-red-service:8000
       BACK_BLUE_URL: http://back-blue-service:8000
       POKEMON_SERVICE_URL: http://pokemon-service:8000
@@ -200,35 +203,56 @@ services:
 
   # # FRONTENDS  (Angular + Nginx)
 
-  # front-general-service:
-  #   build: ./FrontGeneralService
-  #   container_name: front-general-service
-  #   ports:
-  #     - "4200:80"
-  #   depends_on:
-  #     - gateway-service
-  #   networks:
-  #     - pokemon-net
+  front-general-service:
+    build: ./FrontGeneralService
+    container_name: front-general-service
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway-service
+    environment:
+      GATEWAY_URL: http://localhost:8000
+      KEYCLOAK_URL: http://localhost:8080
+      KEYCLOAK_REALM: pokemon-drafter
+      KEYCLOAK_CLIENT_ID: frontend-client
+      FRONT_RED_URL: http://localhost:4201
+      FRONT_BLUE_URL: http://localhost:4202
+    networks:
+      - pokemon-net
 
-  # front-red-service:
-  #   build: ./FrontRedService
-  #   container_name: front-red-service
-  #   ports:
-  #     - "4201:80"
-  #   depends_on:
-  #     - gateway-service
-  #   networks:
-  #     - pokemon-net
+  front-red-service:
+    build: ./FrontColorService
+    container_name: front-red-service
+    ports:
+      - "4201:80"
+    depends_on:
+      - gateway-service
+    environment:
+      COLOR: red
+      GATEWAY_URL: http://localhost:8000
+      KEYCLOAK_URL: http://localhost:8080
+      KEYCLOAK_REALM: pokemon-drafter
+      KEYCLOAK_CLIENT_ID: frontend-client
+      FRONT_GENERAL_URL: http://localhost:4200
+    networks:
+      - pokemon-net
 
-  # front-blue-service:
-  #   build: ./FrontBlueService
-  #   container_name: front-blue-service
-  #   ports:
-  #     - "4202:80"
-  #   depends_on:
-  #     - gateway-service
-  #   networks:
-  #     - pokemon-net
+  front-blue-service:
+    build: ./FrontColorService
+    container_name: front-blue-service
+    ports:
+      - "4202:80"
+    depends_on:
+      - gateway-service
+    environment:
+      COLOR: blue
+      GATEWAY_URL: http://localhost:8000
+      KEYCLOAK_URL: http://localhost:8080
+      KEYCLOAK_REALM: pokemon-drafter
+      KEYCLOAK_CLIENT_ID: frontend-client
+      FRONT_GENERAL_URL: http://localhost:4200
+    networks:
+      - pokemon-net
 
   # Mailpit fake SMTP server for keycloak
   mailpit:
