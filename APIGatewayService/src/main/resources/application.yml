@@ -19,9 +19,24 @@ spring:
           uri: ${POKEMON_SERVICE_URL:http://pokemon-service:8000}
           predicates:
             - Path=/api/pokemon/**
+          filters:
+            - StripPrefix=1
+        - id: types-route
+          uri: ${POKEMON_SERVICE_URL:http://pokemon-service:8000}
+          predicates:
+            - Path=/api/types/**
+          filters:
+            - StripPrefix=1
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_URL}/realms/pokemon-drafter
           jwk-set-uri: ${KEYCLOAK_URL}/realms/pokemon-drafter/protocol/openid-connect/certs
+
+keycloak:
+  url: ${KEYCLOAK_URL}
+  realm: ${KEYCLOAK_REALM:pokemon-drafter}
+  admin:
+    username: ${KEYCLOAK_ADMIN_USERNAME:admin}
+    password: ${KEYCLOAK_ADMIN_PASSWORD:admin}

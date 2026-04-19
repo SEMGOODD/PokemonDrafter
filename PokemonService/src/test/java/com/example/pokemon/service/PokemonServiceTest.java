@@ -16,6 +16,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -33,6 +34,7 @@ class PokemonServiceTest {
 	private PokeApiClient client;
 	private PokeApiMapper mapper;
 	private SpeciesService speciesService;
+	private PokemonNameIndexService nameIndexService;
 	private PokemonService service;
 	private Pokemon pikachu;
 	private Species pikachuSpecies;
@@ -43,7 +45,9 @@ class PokemonServiceTest {
 		client = mock(PokeApiClient.class);
 		mapper = mock(PokeApiMapper.class);
 		speciesService = mock(SpeciesService.class);
-		service = new PokemonService(cache, client, mapper, speciesService);
+		nameIndexService = mock(PokemonNameIndexService.class);
+		when(nameIndexService.getFrenchName(anyInt())).thenReturn(null);
+		service = new PokemonService(cache, client, mapper, speciesService, nameIndexService);
 
 		pikachuSpecies = new Species(PIKACHU_SPECIES_ID, "Lights up dark places.", "forest");
 		pikachu = new Pokemon(
@@ -92,6 +96,29 @@ class PokemonServiceTest {
 		assertEquals(pikachu, result);
 		verify(client, never()).fetchPokemon(any());
 		verify(speciesService, never()).getById(any(Integer.class));
+	}
+
+	@Test
+	void returnsPokemonWithFrenchNameWhenIndexKnowsIt() {
+		when(cache.findById(PIKACHU_ID)).thenReturn(Optional.of(pikachu));
+		when(nameIndexService.getFrenchName(PIKACHU_ID)).thenReturn("Pikachu");
+
+		Pokemon result = service.getById(PIKACHU_ID);
+
+		assertEquals("Pikachu", result.name());
+		assertEquals(PIKACHU_ID, result.id());
+		assertEquals(pikachu.stats(), result.stats());
+		assertEquals(pikachu.sprite(), result.sprite());
+	}
+
+	@Test
+	void keepsEnglishNameWhenFrenchNameMissingOrBlank() {
+		when(cache.findById(PIKACHU_ID)).thenReturn(Optional.of(pikachu));
+		when(nameIndexService.getFrenchName(PIKACHU_ID)).thenReturn("");
+
+		Pokemon result = service.getById(PIKACHU_ID);
+
+		assertEquals(PIKACHU_NAME, result.name());
 	}
 
 	@Test

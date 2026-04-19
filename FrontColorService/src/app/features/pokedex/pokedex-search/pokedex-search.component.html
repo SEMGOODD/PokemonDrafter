@@ -1,0 +1,62 @@
+<app-page-frame>
+  <section class="pokedex">
+    <header class="pokedex__heading">
+      <h1 class="pokedex__title">Pokédex</h1>
+      <p class="pokedex__subtitle">Cherche un Pokémon par nom ou par type.</p>
+    </header>
+
+    <form class="pokedex__form" (submit)="$event.preventDefault()">
+      <label class="pokedex__field pokedex__field--name">
+        <span class="pokedex__label">Nom</span>
+        <input
+          type="text"
+          [formControl]="nameControl"
+          placeholder="pikachu, charizard…"
+          autocomplete="off"
+        />
+      </label>
+
+      <label class="pokedex__field">
+        <span class="pokedex__label">Type 1</span>
+        <select [formControl]="type1Control">
+          <option value="">Tous</option>
+          @for (t of types; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="pokedex__field">
+        <span class="pokedex__label">Type 2</span>
+        <select [formControl]="type2Control">
+          <option value="">Tous</option>
+          @for (t of types; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </label>
+    </form>
+
+    @if (error()) {
+      <div class="pokedex__state pokedex__state--error">
+        Erreur lors de la recherche. Vérifie que la gateway et pokemon-service tournent.
+      </div>
+    } @else if (isLoading()) {
+      <div class="pokedex__state">Chargement…</div>
+    } @else if (results().length === 0) {
+      <div class="pokedex__state">Aucun Pokémon ne correspond.</div>
+    } @else {
+      <div class="pokedex__grid">
+        @for (pokemon of results(); track pokemon.id) {
+          <app-pokemon-summary-card [pokemon]="pokemon"/>
+        }
+      </div>
+
+      <nav class="pokedex__pagination" aria-label="Pagination">
+        <button type="button" (click)="goPrev()" [disabled]="!canGoPrev()">Précédent</button>
+        <span class="pokedex__page">Page {{ page() + 1 }}</span>
+        <button type="button" (click)="goNext()" [disabled]="!canGoNext()">Suivant</button>
+      </nav>
+    }
+  </section>
+</app-page-frame>

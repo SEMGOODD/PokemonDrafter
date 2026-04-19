@@ -1,0 +1,72 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+import { APP_ENV } from '../../core/env/app-env';
+import { PageFrameComponent } from '../../shared/ui/page-frame/page-frame.component';
+
+@Component({
+  selector: 'app-home',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [PageFrameComponent, RouterLink],
+  template: `
+    <app-page-frame>
+      <div class="home">
+        <h1 class="home__title">Bienvenue !</h1>
+        <p class="home__subtitle">Prêt à affronter l'équipe adverse ?</p>
+        <div class="home__actions">
+          <a routerLink="/pokedex" class="home__cta">Ouvrir le Pokédex</a>
+        </div>
+        <a class="home__account" [href]="accountUrl">Mon compte</a>
+      </div>
+    </app-page-frame>
+  `,
+  styles: [`
+    .home {
+      max-width: 30rem;
+      margin: 5rem auto 0;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .home__title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.5rem;
+    }
+    .home__subtitle {
+      color: #666666;
+      margin: 0 0 2rem;
+    }
+    .home__actions {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .home__cta {
+      display: inline-block;
+      padding: 0.875rem 1.75rem;
+      background: #111111;
+      color: #ffffff;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .home__cta:hover { background: #333333; }
+    .home__account {
+      display: inline-block;
+      margin: 0 auto;
+      color: #555555;
+      font-size: 0.9rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .home__account:hover { color: #111111; }
+  `]
+})
+export class HomeComponent {
+  private readonly env = inject(APP_ENV);
+
+  readonly accountUrl = `${this.env.FRONT_GENERAL_URL}/dashboard`;
+}

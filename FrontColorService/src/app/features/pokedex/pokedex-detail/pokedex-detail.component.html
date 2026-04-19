@@ -1,0 +1,72 @@
+<app-page-frame>
+  <section class="detail">
+    <nav class="detail__nav" aria-label="Navigation">
+      <button type="button" class="detail__nav-btn" (click)="goBack()">← Retour</button>
+    </nav>
+
+    @if (error()) {
+      <div class="detail__state detail__state--error">
+        Erreur lors du chargement du Pokémon. Vérifie que la gateway et pokemon-service tournent.
+      </div>
+    } @else if (isLoading()) {
+      <div class="detail__state">Chargement…</div>
+    } @else if (pokemon(); as p) {
+      <article class="detail__card">
+        <header class="detail__hero">
+          <span class="detail__number">#{{ paddedId() }}</span>
+          <h1 class="detail__name">{{ p.name }}</h1>
+          <div class="detail__types">
+            @for (type of p.types; track type) {
+              <app-type-badge [type]="type"/>
+            }
+          </div>
+        </header>
+
+        <div class="detail__sprite-wrap">
+          <img class="detail__sprite" [src]="p.sprite" [alt]="p.name" draggable="false"/>
+        </div>
+
+        <dl class="detail__meta">
+          <div class="detail__meta-item">
+            <dt>Taille</dt>
+            <dd>{{ heightMetres() }} m</dd>
+          </div>
+          <div class="detail__meta-item">
+            <dt>Poids</dt>
+            <dd>{{ weightKilograms() }} kg</dd>
+          </div>
+          <div class="detail__meta-item">
+            <dt>Habitat</dt>
+            <dd class="detail__habitat">{{ habitatLabel() }}</dd>
+          </div>
+        </dl>
+
+        <section class="detail__stats">
+          <h2 class="detail__section-title">Statistiques</h2>
+          <ul class="detail__stats-list">
+            @for (stat of statRows(); track stat.label) {
+              <li class="detail__stat-row">
+                <span class="detail__stat-label">{{ stat.label }}</span>
+                <div class="detail__stat-bar">
+                  <div
+                    class="detail__stat-fill"
+                    [style.width.%]="percentOfMax(stat.value)"
+                    [style.background]="'var(' + stat.colorVar + ')'"
+                  ></div>
+                </div>
+                <span class="detail__stat-value">{{ stat.value }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (p.description) {
+          <section class="detail__description">
+            <h2 class="detail__section-title">Description</h2>
+            <p class="detail__description-text">{{ p.description }}</p>
+          </section>
+        }
+      </article>
+    }
+  </section>
+</app-page-frame>

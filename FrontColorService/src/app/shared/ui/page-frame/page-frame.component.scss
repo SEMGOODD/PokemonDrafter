@@ -1,0 +1,63 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--frame-bg);
+}
+
+.page-frame {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--frame-bg);
+}
+
+.page-frame__header {
+  position: relative;
+  flex-shrink: 0;
+  height: calc(var(--frame-stripe-height) + var(--frame-line-thickness));
+}
+
+.page-frame__stripe-themed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--frame-stripe-height);
+  background: var(--theme-color);
+}
+
+.page-frame__separator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--frame-stripe-height);
+  height: var(--frame-line-thickness);
+  background: var(--separator-color);
+}
+
+.page-frame__stripe-neutral {
+  position: absolute;
+  top: var(--frame-stripe-height);
+  left: 0;
+  right: 0;
+  height: var(--frame-line-thickness);
+  background: var(--separator-color);
+}
+
+.page-frame__pokeball {
+  position: absolute;
+  right: var(--pokeball-right-offset);
+  top: calc(var(--frame-stripe-height) + var(--frame-line-thickness) / 2 - var(--pokeball-size) / 2);
+  width: var(--pokeball-size);
+  height: var(--pokeball-size);
+  z-index: 2;
+}
+
+.page-frame__content {
+  flex: 1;
+  padding: 2.5rem 3rem;
+}
+
+@media (max-width: 640px) {
+  .page-frame__content { padding: 1.5rem 1.25rem; }
+}

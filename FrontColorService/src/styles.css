@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --frame-bg: #ffffff;
+  --page-bg: #ffffff;
+
+  --theme-color: #ff0000;
+  --separator-color: #ff0000;
+
+  --frame-line-thickness: 0.5rem;
+  --frame-stripe-height: 3.75rem;
+  --pokeball-size: 5.5rem;
+  --pokeball-right-offset: 4rem;
+}
+
+[data-theme="neutral"] {
+  --theme-color: #ff0000;
+  --separator-color: var(--theme-color);
+}
+
+[data-theme="red"] {
+  --theme-color: #ff0000;
+  --separator-color: #000000;
+}
+
+[data-theme="blue"] {
+  --theme-color: #1a80c4;
+  --separator-color: #000000;
+}
+
+[data-theme="love"] {
+  --theme-color: #e85a9b;
+  --separator-color: #000000;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #111111;
+  -webkit-font-smoothing: antialiased;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: pokeball-reveal 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes pokeball-reveal {
+  from { clip-path: circle(0 at calc(100% - 6.75rem) calc(3.75rem + 0.25rem)); }
+  to { clip-path: circle(150% at calc(100% - 6.75rem) calc(3.75rem + 0.25rem)); }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --pokeball-size: 4rem;
+    --pokeball-right-offset: 1.25rem;
+    --frame-stripe-height: 3rem;
+  }
+}
