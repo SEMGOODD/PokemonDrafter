@@ -9,7 +9,11 @@ public class PokeApiClient {
 
 	private static final String PATH_POKEMON = "/pokemon/{idOrName}";
 	private static final String PATH_POKEMON_SPECIES = "/pokemon-species/{id}";
+	private static final String PATH_POKEMON_SPECIES_LIST = "/pokemon-species";
 	private static final String PATH_TYPE = "/type/{name}";
+
+	private static final String QUERY_PARAM_LIMIT = "limit";
+	private static final String QUERY_PARAM_OFFSET = "offset";
 
 	private final RestClient restClient;
 
@@ -27,6 +31,17 @@ public class PokeApiClient {
 	public JsonNode fetchPokemonSpecies(int speciesId) {
 		return restClient.get()
 				.uri(PATH_POKEMON_SPECIES, speciesId)
+				.retrieve()
+				.body(JsonNode.class);
+	}
+
+	public JsonNode fetchPokemonSpeciesList(int limit, int offset) {
+		return restClient.get()
+				.uri(uriBuilder -> uriBuilder
+						.path(PATH_POKEMON_SPECIES_LIST)
+						.queryParam(QUERY_PARAM_LIMIT, limit)
+						.queryParam(QUERY_PARAM_OFFSET, offset)
+						.build())
 				.retrieve()
 				.body(JsonNode.class);
 	}

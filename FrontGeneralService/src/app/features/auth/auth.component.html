@@ -1,0 +1,127 @@
+<app-page-frame>
+  <section class="auth">
+    <header class="auth__heading">
+      <h1 class="auth__title">Bienvenue !</h1>
+      <p class="auth__subtitle">
+        @if (activeView() === 'forgot') {
+          Renseigne ton email pour recevoir un lien de réinitialisation.
+        } @else {
+          Connecte-toi ou crée un compte pour rejoindre ton équipe.
+        }
+      </p>
+    </header>
+
+    <div class="auth__card">
+      @if (activeView() === 'main') {
+        <div class="auth__tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            class="auth__tab"
+            [class.auth__tab--active]="activeTab() === 'login'"
+            [attr.aria-selected]="activeTab() === 'login'"
+            (click)="setTab('login')"
+          >
+            Connexion
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="auth__tab"
+            [class.auth__tab--active]="activeTab() === 'register'"
+            [attr.aria-selected]="activeTab() === 'register'"
+            (click)="setTab('register')"
+          >
+            Inscription
+          </button>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="auth__feedback auth__feedback--error" role="alert">
+          {{ errorMessage() }}
+        </div>
+      }
+      @if (successMessage()) {
+        <div class="auth__feedback auth__feedback--success" role="status">
+          {{ successMessage() }}
+        </div>
+      }
+
+      @if (activeView() === 'main' && activeTab() === 'login') {
+        <form class="auth__form" (submit)="$event.preventDefault(); onLoginSubmit()">
+          <label class="auth__field">
+            <span class="auth__label">Email ou pseudo</span>
+            <input type="text" name="username" [(ngModel)]="loginForm.username" autocomplete="username" placeholder="red_player1"/>
+          </label>
+          <label class="auth__field">
+            <span class="auth__label">Mot de passe</span>
+            <input type="password" name="password" [(ngModel)]="loginForm.password" autocomplete="current-password" placeholder="••••••••"/>
+          </label>
+          <button type="submit" class="auth__submit" [disabled]="loading()">
+            {{ loading() ? 'Connexion…' : 'Se connecter' }}
+          </button>
+          <button type="button" class="auth__link" (click)="openForgotView()">
+            Mot de passe oublié ?
+          </button>
+        </form>
+      }
+
+      @if (activeView() === 'main' && activeTab() === 'register') {
+        <form class="auth__form" (submit)="$event.preventDefault(); onSignupSubmit()">
+          <div class="auth__row">
+            <label class="auth__field auth__field--half">
+              <span class="auth__label">Nom</span>
+              <input type="text" name="nom" [(ngModel)]="signupForm.nom" autocomplete="family-name" placeholder="Dupont"/>
+            </label>
+            <label class="auth__field auth__field--half">
+              <span class="auth__label">Prénom</span>
+              <input type="text" name="prenom" [(ngModel)]="signupForm.prenom" autocomplete="given-name" placeholder="Sacha"/>
+            </label>
+          </div>
+          <label class="auth__field">
+            <span class="auth__label">Email</span>
+            <input type="email" name="mail" [(ngModel)]="signupForm.mail" autocomplete="email" placeholder="dresseur@pokemon-drafter.local"/>
+          </label>
+          <label class="auth__field">
+            <span class="auth__label">Pseudo</span>
+            <input type="text" name="pseudo" [(ngModel)]="signupForm.pseudo" autocomplete="username" placeholder="sacha_dresseur"/>
+          </label>
+          <label class="auth__field">
+            <span class="auth__label">Mot de passe</span>
+            <input type="password" name="newPassword" [(ngModel)]="signupForm.password" autocomplete="new-password" placeholder="•••••••• (8+ caractères)"/>
+          </label>
+          <fieldset class="auth__team">
+            <legend class="auth__label">Équipe</legend>
+            <label class="auth__radio" [class.auth__radio--active]="signupForm.couleur === 'red'">
+              <input type="radio" name="couleur" [(ngModel)]="signupForm.couleur" value="red"/>
+              <span class="auth__chip auth__chip--red">Rouge</span>
+            </label>
+            <label class="auth__radio" [class.auth__radio--active]="signupForm.couleur === 'blue'">
+              <input type="radio" name="couleur" [(ngModel)]="signupForm.couleur" value="blue"/>
+              <span class="auth__chip auth__chip--blue">Bleue</span>
+            </label>
+          </fieldset>
+          <button type="submit" class="auth__submit" [disabled]="loading()">
+            {{ loading() ? 'Création…' : 'Créer mon compte' }}
+          </button>
+        </form>
+      }
+
+      @if (activeView() === 'forgot') {
+        <form class="auth__form" (submit)="$event.preventDefault(); onForgotSubmit()">
+          <label class="auth__field">
+            <span class="auth__label">Email</span>
+            <input type="email" name="forgotMail" [(ngModel)]="forgotForm.mail" autocomplete="email" placeholder="dresseur@pokemon-drafter.local"/>
+          </label>
+          <button type="submit" class="auth__submit" [disabled]="loading()">
+            {{ loading() ? 'Envoi…' : 'Envoyer le lien' }}
+          </button>
+          <button type="button" class="auth__link" (click)="openMainView()">
+            ← Retour à la connexion
+          </button>
+        </form>
+      }
+    </div>
+  </section>
+</app-page-frame>

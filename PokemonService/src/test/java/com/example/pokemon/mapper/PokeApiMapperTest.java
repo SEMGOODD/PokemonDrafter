@@ -1,5 +1,6 @@
 package com.example.pokemon.mapper;
 
+import com.example.pokemon.model.NameIndexEntry;
 import com.example.pokemon.model.Pokemon;
 import com.example.pokemon.model.PokemonSummary;
 import com.example.pokemon.model.Species;
@@ -183,6 +184,64 @@ class PokeApiMapperTest {
 		List<Integer> ids = mapper.extractPokemonIdsFromTypeNode(typeNode);
 
 		assertEquals(List.of(25, 26), ids);
+	}
+
+	@Test
+	void extractsNameIndexFromSpeciesListNode() {
+		String json = """
+				{
+				  "count": 3,
+				  "results": [
+				    { "name": "bulbasaur", "url": "https://pokeapi.co/api/v2/pokemon-species/1/" },
+				    { "name": "charmander", "url": "https://pokeapi.co/api/v2/pokemon-species/4/" },
+				    { "name": "pikachu", "url": "https://pokeapi.co/api/v2/pokemon-species/25/" }
+				  ]
+				}
+				""";
+		JsonNode listNode = objectMapper.readTree(json);
+
+		List<NameIndexEntry> entries = mapper.extractNameIndexFromSpeciesListNode(listNode);
+
+		assertEquals(3, entries.size());
+		assertEquals(1, entries.get(0).id());
+		assertEquals("bulbasaur", entries.get(0).nameEn());
+		assertNull(entries.get(0).nameFr());
+		assertEquals(25, entries.get(2).id());
+		assertEquals("pikachu", entries.get(2).nameEn());
+	}
+
+	@Test
+	void extractsFrenchNameFromSpeciesNode() {
+		String json = """
+				{
+				  "names": [
+				    { "name": "Sylveon", "language": { "name": "en" } },
+				    { "name": "Nymphali", "language": { "name": "fr" } },
+				    { "name": "Nimphali", "language": { "name": "ja" } }
+				  ]
+				}
+				""";
+		JsonNode speciesNode = objectMapper.readTree(json);
+
+		String nameFr = mapper.extractFrenchNameFromSpeciesNode(speciesNode);
+
+		assertEquals("Nymphali", nameFr);
+	}
+
+	@Test
+	void extractFrenchNameReturnsNullIfMissing() {
+		String json = """
+				{
+				  "names": [
+				    { "name": "Sylveon", "language": { "name": "en" } }
+				  ]
+				}
+				""";
+		JsonNode speciesNode = objectMapper.readTree(json);
+
+		String nameFr = mapper.extractFrenchNameFromSpeciesNode(speciesNode);
+
+		assertNull(nameFr);
 	}
 
 	@Test
