@@ -4,9 +4,9 @@ WORKDIR /app
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
 
-RUN ./gradlew dependencies --no-daemon || true
-
 COPY . .
+
+RUN chmod +x ./gradlew
 
 RUN ./gradlew clean bootJar -x test --no-daemon
 
