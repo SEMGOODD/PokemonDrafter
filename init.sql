@@ -1,7 +1,3 @@
--- ============================================================
---  PokemonDrafter – Database Initialization
---  Executed automatically by Postgres on first startup.
--- ============================================================
 
 -- Database for RED team users, teams, and battle history
 CREATE DATABASE red_db;

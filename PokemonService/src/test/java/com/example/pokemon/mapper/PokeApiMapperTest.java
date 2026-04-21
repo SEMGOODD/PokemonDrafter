@@ -4,8 +4,8 @@ import com.example.pokemon.model.NameIndexEntry;
 import com.example.pokemon.model.Pokemon;
 import com.example.pokemon.model.PokemonSummary;
 import com.example.pokemon.model.Species;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -248,8 +248,7 @@ class PokeApiMapperTest {
 	void returnsNullSpriteWhenAbsent() {
 		String noSpriteJson = POKEMON_JSON.replace(
 				"\"sprites\": { \"front_default\": \"https://example.test/pikachu.png\" }",
-				"\"sprites\": { \"front_default\": null }"
-		);
+				"\"sprites\": { \"front_default\": null }");
 		JsonNode pokemonNode = objectMapper.readTree(noSpriteJson);
 		Species species = new Species(PIKACHU_SPECIES_ID, "", "unknown");
 

@@ -11,26 +11,36 @@ spring:
           uri: ${BACK_RED_URL:http://back-red-service:8000}
           predicates:
             - Path=/api/red/**
+
         - id: back-blue-route
           uri: ${BACK_BLUE_URL:http://back-blue-service:8000}
           predicates:
             - Path=/api/blue/**
+
         - id: pokemon-route
           uri: ${POKEMON_SERVICE_URL:http://pokemon-service:8000}
           predicates:
             - Path=/api/pokemon/**
           filters:
             - StripPrefix=1
+
         - id: types-route
           uri: ${POKEMON_SERVICE_URL:http://pokemon-service:8000}
           predicates:
             - Path=/api/types/**
           filters:
             - StripPrefix=1
+
         - id: combat-route
           uri: ${COMBAT_SERVICE_URL:http://combat-service:8000}
           predicates:
             - Path=/api/combat/**
+
+        - id: chat-route
+          uri: ${CHAT_SERVICE_URL:http://chat-service:8000}
+          predicates:
+            - Path=/api/chat/**
+
   security:
     oauth2:
       resourceserver:
