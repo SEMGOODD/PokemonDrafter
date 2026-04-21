@@ -2,9 +2,9 @@ package com.example.pokemon.cache;
 
 import com.example.pokemon.config.CacheConstants;
 import com.example.pokemon.model.TypeEffectiveness;
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -61,7 +61,8 @@ public class TypeCacheRepository {
 	public void saveEffectiveness(TypeEffectiveness effectiveness) {
 		try {
 			String json = objectMapper.writeValueAsString(effectiveness);
-			redisTemplate.opsForValue().set(CacheConstants.KEY_TYPE_EFFECTIVENESS, json, CacheConstants.TTL_EFFECTIVENESS);
+			redisTemplate.opsForValue().set(CacheConstants.KEY_TYPE_EFFECTIVENESS, json,
+					CacheConstants.TTL_EFFECTIVENESS);
 		} catch (JacksonException e) {
 			throw new IllegalStateException("Failed to serialize type effectiveness matrix", e);
 		}

@@ -2,8 +2,8 @@ package com.example.pokemon.cache;
 
 import com.example.pokemon.config.CacheConstants;
 import com.example.pokemon.model.Pokemon;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -36,7 +36,8 @@ public class PokemonCacheRepository {
 		try {
 			String json = objectMapper.writeValueAsString(pokemon);
 			redisTemplate.opsForValue().set(keyForId(pokemon.id()), json, CacheConstants.TTL_POKEMON);
-			redisTemplate.opsForValue().set(keyForName(pokemon.name()), String.valueOf(pokemon.id()), CacheConstants.TTL_POKEMON);
+			redisTemplate.opsForValue().set(keyForName(pokemon.name()), String.valueOf(pokemon.id()),
+					CacheConstants.TTL_POKEMON);
 		} catch (JacksonException e) {
 			throw new IllegalStateException("Failed to serialize Pokemon id " + pokemon.id(), e);
 		}

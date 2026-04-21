@@ -6,7 +6,7 @@ import com.example.pokemon.mapper.PokeApiMapper;
 import com.example.pokemon.model.Pokemon;
 import com.example.pokemon.model.PokemonStats;
 import com.example.pokemon.model.Species;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,8 +55,7 @@ class PokemonServiceTest {
 				4, 60,
 				new PokemonStats(35, 55, 40, 50, 50, 90),
 				pikachuSpecies.description(), pikachuSpecies.habitat(),
-				"https://example.test/pikachu.png"
-		);
+				"https://example.test/pikachu.png");
 	}
 
 	@Test

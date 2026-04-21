@@ -15,7 +15,7 @@ import com.example.combat.model.PlayerActionRequest;
 import com.example.combat.model.Team;
 import com.example.combat.model.TurnResult;
 import com.example.combat.repository.BattleRepository;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -85,11 +85,9 @@ public class BattleService {
 	}
 
 	public Battle getBattle(String battleId) {
-		return battles.computeIfAbsent(battleId, id ->
-				battleRepository.findById(id)
-						.map(this::deserialize)
-						.orElseThrow(() -> new IllegalArgumentException("Battle not found: " + id))
-		);
+		return battles.computeIfAbsent(battleId, id -> battleRepository.findById(id)
+				.map(this::deserialize)
+				.orElseThrow(() -> new IllegalArgumentException("Battle not found: " + id)));
 	}
 
 	public List<TurnResult> getTurns(String battleId) {
@@ -131,7 +129,8 @@ public class BattleService {
 				throw new IllegalStateException("It is not your turn to pick");
 			}
 			if (request.pokemonIds().size() != expectedCount) {
-				throw new IllegalArgumentException("Expected " + expectedCount + " pick(s), got " + request.pokemonIds().size());
+				throw new IllegalArgumentException(
+						"Expected " + expectedCount + " pick(s), got " + request.pokemonIds().size());
 			}
 
 			List<BattlePokemon> pool = battle.getDraftPool();
@@ -219,17 +218,22 @@ public class BattleService {
 	public void checkExpiredTimers() {
 		Instant now = Instant.now();
 		battles.values().forEach(battle -> {
-			if (battle.getStatus() != BattleStatus.IN_PROGRESS) return;
-			if (battle.getTurnDeadline() == null || now.isBefore(battle.getTurnDeadline())) return;
+			if (battle.getStatus() != BattleStatus.IN_PROGRESS)
+				return;
+			if (battle.getTurnDeadline() == null || now.isBefore(battle.getTurnDeadline()))
+				return;
 
 			synchronized (battle) {
-				if (battle.getStatus() != BattleStatus.IN_PROGRESS) return;
-				if (now.isBefore(battle.getTurnDeadline())) return;
+				if (battle.getStatus() != BattleStatus.IN_PROGRESS)
+					return;
+				if (now.isBefore(battle.getTurnDeadline()))
+					return;
 
 				boolean redActed = battle.getRedAction() != null;
 				boolean blueActed = battle.getBlueAction() != null;
 
-				if (!redActed && !blueActed) return;
+				if (!redActed && !blueActed)
+					return;
 
 				if (!redActed) {
 					battle.setWinnerId(battle.getBluePlayerId());
@@ -283,8 +287,7 @@ public class BattleService {
 							battle.getStatus(),
 							battle.getWinnerId(),
 							battle.getTurnNumber(),
-							json
-					));
+							json));
 			entity.setStatus(battle.getStatus());
 			entity.setWinnerId(battle.getWinnerId());
 			entity.setTurnNumber(battle.getTurnNumber());

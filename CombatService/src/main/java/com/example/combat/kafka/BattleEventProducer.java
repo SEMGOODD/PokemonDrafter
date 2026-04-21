@@ -2,7 +2,7 @@ package com.example.combat.kafka;
 
 import com.example.combat.model.Battle;
 import com.example.combat.model.TurnResult;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -29,12 +29,10 @@ public class BattleEventProducer {
 				"battleId", battle.getBattleId(),
 				"mode", battle.getMode().name(),
 				"redPlayerId", battle.getRedPlayerId(),
-				"bluePlayerId", battle.getBluePlayerId()
-		));
+				"bluePlayerId", battle.getBluePlayerId()));
 		publish(TOPIC_LOGS, Map.of(
 				"eventType", "BATTLE_STARTED",
-				"battleId", battle.getBattleId()
-		));
+				"battleId", battle.getBattleId()));
 	}
 
 	public void publishTurnResult(Battle battle, TurnResult result) {
@@ -42,15 +40,13 @@ public class BattleEventProducer {
 				"eventType", "TURN_RESOLVED",
 				"battleId", battle.getBattleId(),
 				"turnNumber", result.turnNumber(),
-				"winnerId", result.winnerId() != null ? result.winnerId() : "DRAW"
-		));
+				"winnerId", result.winnerId() != null ? result.winnerId() : "DRAW"));
 
 		String message = buildChatMessage(battle, result);
 		publish(TOPIC_CHAT, Map.of(
 				"battleId", battle.getBattleId(),
 				"isBot", true,
-				"message", message
-		));
+				"message", message));
 	}
 
 	public void publishBattleEnded(Battle battle) {
@@ -60,13 +56,11 @@ public class BattleEventProducer {
 				"battleId", battle.getBattleId(),
 				"winnerId", winnerId,
 				"redPlayerId", battle.getRedPlayerId(),
-				"bluePlayerId", battle.getBluePlayerId()
-		));
+				"bluePlayerId", battle.getBluePlayerId()));
 		publish(TOPIC_LOGS, Map.of(
 				"eventType", "BATTLE_ENDED",
 				"battleId", battle.getBattleId(),
-				"winnerId", winnerId
-		));
+				"winnerId", winnerId));
 	}
 
 	public void publishForfeit(Battle battle, String forfeitingPlayerId) {
@@ -74,13 +68,11 @@ public class BattleEventProducer {
 				"eventType", "FORFEIT",
 				"battleId", battle.getBattleId(),
 				"forfeitingPlayerId", forfeitingPlayerId,
-				"winnerId", battle.getWinnerId()
-		));
+				"winnerId", battle.getWinnerId()));
 		publish(TOPIC_CHAT, Map.of(
 				"battleId", battle.getBattleId(),
 				"isBot", true,
-				"message", "Le joueur " + forfeitingPlayerId + " a déclaré forfait."
-		));
+				"message", "Le joueur " + forfeitingPlayerId + " a déclaré forfait."));
 	}
 
 	private String buildChatMessage(Battle battle, TurnResult result) {

@@ -18,6 +18,12 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 3
+    healthcheck:
+      test: [ "CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     networks:
       - pokemon-net
 
@@ -182,17 +188,18 @@ services:
     networks:
       - pokemon-net
 
-  # chat-service:
-  #   build: ./ChatService
-  #   container_name: chat-service
-  #   ports:
-  #     - "8006:8000"
-  #   depends_on:
-  #     - kafka
-  #   environment:
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #   networks:
-  #     - pokemon-net
+  chat-service:
+    build: ./ChatService
+    container_name: chat-service
+    ports:
+      - "8006:8000"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - pokemon-net
 
   # logs-service:
   #   build: ./LogsService
