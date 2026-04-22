@@ -2,7 +2,7 @@ services:
 
   #  INFRASTRUCTURE
   kafka:
-    image: apache/kafka:latest
+    image: apache/kafka
     container_name: kafka
     ports:
       - "9092:9092"
@@ -29,6 +29,7 @@ services:
 
   postgres:
     image: postgres:17
+
     container_name: postgres-db
     ports:
       - "5432:5432"
@@ -55,7 +56,7 @@ services:
       - pokemon-net
 
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    image: quay.io/keycloak/keycloak
     container_name: keycloak
     command: start-dev --import-realm
     ports:
@@ -81,6 +82,7 @@ services:
 
   gateway-service:
     build: ./APIGatewayService
+    image: gateway-service
     container_name: gateway-service
     ports:
       - "8000:8080"
@@ -106,6 +108,7 @@ services:
 
   # back-red-service:
   #   build: ./BackRedService
+  #   image: back-red-service
   #   container_name: back-red-service
   #   ports:
   #     - "8001:8000"
@@ -123,6 +126,7 @@ services:
 
   # back-blue-service:
   #   build: ./BackBlueService
+  #   image: back-blue-service
   #   container_name: back-blue-service
   #   ports:
   #     - "8002:8000"
@@ -142,6 +146,7 @@ services:
 
   pokemon-service:
     build: ./PokemonService
+    image: pokemon-service
     container_name: pokemon-service
     ports:
       - "8003:8000"
@@ -171,6 +176,7 @@ services:
 
   combat-service:
     build: ./CombatService
+    image: combat-service
     container_name: combat-service
     ports:
       - "8005:8000"
@@ -190,6 +196,7 @@ services:
 
   chat-service:
     build: ./ChatService
+    image: chat-service
     container_name: chat-service
     ports:
       - "8006:8000"
@@ -203,6 +210,7 @@ services:
 
   # logs-service:
   #   build: ./LogsService
+  #   image: logs-service
   #   container_name: logs-service
   #   ports:
   #     - "8007:8000"
@@ -219,6 +227,7 @@ services:
 
   front-general-service:
     build: ./FrontGeneralService
+    image: front-general-service
     container_name: front-general-service
     ports:
       - "4200:80"
@@ -236,6 +245,7 @@ services:
 
   front-red-service:
     build: ./FrontColorService
+    image: front-red-service
     container_name: front-red-service
     ports:
       - "4201:80"
@@ -253,6 +263,7 @@ services:
 
   front-blue-service:
     build: ./FrontColorService
+    image: front-blue-service
     container_name: front-blue-service
     ports:
       - "4202:80"
@@ -270,7 +281,7 @@ services:
 
   # Mailpit fake SMTP server for keycloak
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit
     container_name: mailpit
     ports:
       - "8025:8025"

@@ -22,15 +22,15 @@ public class PokemonSearchService {
 	public PokemonSearchService(
 			PokemonService pokemonService,
 			TypePokemonListService typePokemonListService,
-			PokemonNameIndexService nameIndexService
-	) {
+			PokemonNameIndexService nameIndexService) {
 		this.pokemonService = pokemonService;
 		this.typePokemonListService = typePokemonListService;
 		this.nameIndexService = nameIndexService;
 	}
 
 	public List<PokemonSummary> search(String name, String type1, String type2, int page, int pageSize) {
-		int boundedPageSize = Math.min(Math.max(pageSize, SearchConstants.PAGE_SIZE_MIN), SearchConstants.PAGE_SIZE_MAX);
+		int boundedPageSize = Math.min(Math.max(pageSize, SearchConstants.PAGE_SIZE_MIN),
+				SearchConstants.PAGE_SIZE_MAX);
 		int boundedPage = Math.max(page, SearchConstants.PAGE_MIN);
 
 		List<Integer> candidateIds;
@@ -53,14 +53,13 @@ public class PokemonSearchService {
 		boolean hasType1 = hasText(type1);
 		boolean hasType2 = hasText(type2);
 		if (!hasType1 && !hasType2) {
-			return Collections.emptyList();
+			return filterOutVariantForms(nameIndexService.getAllIds());
 		}
 		List<Integer> ids;
 		if (hasType1 && hasType2) {
 			ids = intersect(
 					typePokemonListService.getPokemonIdsForType(type1),
-					typePokemonListService.getPokemonIdsForType(type2)
-			);
+					typePokemonListService.getPokemonIdsForType(type2));
 		} else {
 			String singleType = hasType1 ? type1 : type2;
 			ids = typePokemonListService.getPokemonIdsForType(singleType);

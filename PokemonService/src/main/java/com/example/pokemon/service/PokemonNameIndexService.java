@@ -38,8 +38,7 @@ public class PokemonNameIndexService {
 	public PokemonNameIndexService(
 			PokeApiClient pokeApiClient,
 			PokeApiMapper mapper,
-			NameIndexCacheRepository cache
-	) {
+			NameIndexCacheRepository cache) {
 		this.pokeApiClient = pokeApiClient;
 		this.mapper = mapper;
 		this.cache = cache;
@@ -49,8 +48,7 @@ public class PokemonNameIndexService {
 	void initialize() {
 		cache.find().ifPresentOrElse(
 				this::useCachedIndex,
-				() -> CompletableFuture.runAsync(this::rebuildFromScratch)
-		);
+				() -> CompletableFuture.runAsync(this::rebuildFromScratch));
 	}
 
 	public List<Integer> findIdsByPrefix(String prefix, int maxResults) {
@@ -68,6 +66,12 @@ public class PokemonNameIndexService {
 			}
 		}
 		return ids;
+	}
+
+	public List<Integer> getAllIds() {
+		return indexRef.get().stream()
+				.map(NameIndexEntry::id)
+				.toList();
 	}
 
 	public String getFrenchName(int id) {
