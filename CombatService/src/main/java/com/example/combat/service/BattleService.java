@@ -108,6 +108,13 @@ public class BattleService {
 				.toList();
 	}
 
+	public List<Battle> getActiveBattlesByPlayer(String playerId) {
+		return battleRepository.findActiveByPlayer(BattleStatus.FINISHED, playerId)
+				.stream()
+				.map(this::deserialize)
+				.toList();
+	}
+
 	public Battle draftPick(String battleId, DraftPickRequest request) {
 		Battle battle = getBattle(battleId);
 		synchronized (battle) {

@@ -53,6 +53,11 @@ public class BattleController {
 		return battleService.getBattlesByPlayer(jwt.getSubject());
 	}
 
+	@GetMapping("/battles/active")
+	public List<Battle> getActiveBattles(@AuthenticationPrincipal Jwt jwt) {
+		return battleService.getActiveBattlesByPlayer(jwt.getSubject());
+	}
+
 	@GetMapping("/battle/{battleId}/turns")
 	public List<TurnResult> getTurns(@PathVariable String battleId, @AuthenticationPrincipal Jwt jwt) {
 		Battle battle = battleService.getBattle(battleId);
