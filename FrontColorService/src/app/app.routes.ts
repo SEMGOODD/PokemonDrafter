@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/auth/auth.guard';
+
 export const routes: Routes = [
   {
     path: '',
@@ -12,6 +14,21 @@ export const routes: Routes = [
   {
     path: 'pokedex/:id',
     loadComponent: () => import('./features/pokedex/pokedex-detail/pokedex-detail.component').then(m => m.PokedexDetailComponent)
+  },
+  {
+    path: 'combat',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/combat/battle-list/battle-list.component').then(m => m.BattleListComponent)
+  },
+  {
+    path: 'combat/new',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/combat/battle-create/battle-create.component').then(m => m.BattleCreateComponent)
+  },
+  {
+    path: 'combat/battle/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/combat/battle-view/battle-view.component').then(m => m.BattleViewComponent)
   },
   { path: '**', redirectTo: '' }
 ];

@@ -75,10 +75,16 @@ services:
         read_only: true
     depends_on:
       - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     networks:
       - pokemon-net
 
-  # API GATEWAY 
+  # API GATEWAY
 
   gateway-service:
     build: ./APIGatewayService
@@ -87,8 +93,10 @@ services:
     ports:
       - "8000:8080"
     depends_on:
-      - kafka
-      - keycloak
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KEYCLOAK_URL: http://keycloak:8080

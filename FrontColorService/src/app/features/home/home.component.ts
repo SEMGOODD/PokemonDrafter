@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { APP_ENV } from '../../core/env/app-env';
+import { AuthService } from '../../core/auth/auth.service';
 import { PageFrameComponent } from '../../shared/ui/page-frame/page-frame.component';
 
 @Component({
@@ -15,6 +16,11 @@ import { PageFrameComponent } from '../../shared/ui/page-frame/page-frame.compon
         <p class="home__subtitle">Prêt à affronter l'équipe adverse ?</p>
         <div class="home__actions">
           <a routerLink="/pokedex" class="home__cta">Ouvrir le Pokédex</a>
+          @if (auth.isLoggedIn()) {
+            <a routerLink="/combat" class="home__cta home__cta--secondary">Mes combats</a>
+          } @else {
+            <a [href]="accountUrl" class="home__cta home__cta--secondary">Se connecter</a>
+          }
         </div>
         <a class="home__account" [href]="accountUrl">Mon compte</a>
       </div>
@@ -42,6 +48,8 @@ import { PageFrameComponent } from '../../shared/ui/page-frame/page-frame.compon
     .home__actions {
       display: flex;
       justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
       margin-bottom: 1rem;
     }
     .home__cta {
@@ -54,6 +62,15 @@ import { PageFrameComponent } from '../../shared/ui/page-frame/page-frame.compon
       font-weight: 600;
     }
     .home__cta:hover { background: #333333; }
+    .home__cta--secondary {
+      background: transparent;
+      color: #111111;
+      border: 2px solid #111111;
+    }
+    .home__cta--secondary:hover {
+      background: #111111;
+      color: #ffffff;
+    }
     .home__account {
       display: inline-block;
       margin: 0 auto;
@@ -66,7 +83,8 @@ import { PageFrameComponent } from '../../shared/ui/page-frame/page-frame.compon
   `]
 })
 export class HomeComponent {
-  private readonly env = inject(APP_ENV);
+  protected readonly env = inject(APP_ENV);
+  protected readonly auth = inject(AuthService);
 
   readonly accountUrl = `${this.env.FRONT_GENERAL_URL}/dashboard`;
 }

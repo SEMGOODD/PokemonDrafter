@@ -12,4 +12,7 @@ public interface BattleRepository extends JpaRepository<BattleEntity, String> {
 
 	@Query("SELECT b FROM BattleEntity b WHERE b.status = :status AND (b.redPlayerId = :playerId OR b.bluePlayerId = :playerId)")
 	List<BattleEntity> findFinishedByPlayer(@Param("status") BattleStatus status, @Param("playerId") String playerId);
+
+	@Query("SELECT b FROM BattleEntity b WHERE b.status != :status AND (b.redPlayerId = :playerId OR b.bluePlayerId = :playerId)")
+	List<BattleEntity> findActiveByPlayer(@Param("status") BattleStatus finishedStatus, @Param("playerId") String playerId);
 }
