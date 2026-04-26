@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 import { APP_ENV, TeamColor } from '../../core/env/app-env';
 import { AuthService } from '../../core/auth/auth.service';
@@ -111,13 +112,20 @@ interface JwtPayload {
     .dashboard__logout:hover { color: #111111; }
   `]
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly env = inject(APP_ENV);
   private readonly themeService = inject(ThemeService);
+  private readonly route = inject(ActivatedRoute);
+
+  private returnPath: string | null = null;
 
   constructor() {
     effect(() => this.themeService.setUserColor(this.teamColor()));
+  }
+
+  ngOnInit(): void {
+    this.returnPath = this.route.snapshot.queryParamMap.get('returnPath');
   }
 
   private readonly payload = computed<JwtPayload | null>(() => {
@@ -137,9 +145,16 @@ export class DashboardComponent {
 
   readonly colorFrontUrl = computed(() => {
     const color = this.teamColor();
-    if (color === 'red') return this.env.FRONT_RED_URL;
-    if (color === 'blue') return this.env.FRONT_BLUE_URL;
-    return null;
+    const token = this.authService.getToken();
+    if (!color || !token) return null;
+
+    const baseUrl = color === 'red' ? this.env.FRONT_RED_URL : this.env.FRONT_BLUE_URL;
+    const encodedToken = encodeURIComponent(token);
+
+    if (this.returnPath) {
+      return `${baseUrl}?token=${encodedToken}&returnPath=${encodeURIComponent(this.returnPath)}`;
+    }
+    return `${baseUrl}?token=${encodedToken}`;
   });
 
   onLogout(): void {

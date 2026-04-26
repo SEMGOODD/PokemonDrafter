@@ -63,6 +63,30 @@ public class KeycloakAdminService {
 										.thenReturn(new SignupResponse(userId, request.couleur())))));
 	}
 
+	public Mono<Map<String, String>> findUserByUsername(String username) {
+		return getAdminToken()
+				.flatMap(token -> webClient.get()
+						.uri(builder -> builder.path(USERS_PATH_TEMPLATE)
+								.queryParam("username", username)
+								.queryParam("exact", true)
+								.build(realm))
+						.headers(h -> h.setBearerAuth(token))
+						.retrieve()
+						.bodyToMono(new org.springframework.core.ParameterizedTypeReference<List<Map<String, Object>>>() {
+						})
+						.flatMap(users -> {
+							if (users.isEmpty()) {
+								return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+							}
+							Map<String, Object> user = users.get(0);
+							return Mono.just(Map.of(
+									"id", (String) user.get("id"),
+									"username", (String) user.get("username")
+							));
+						})
+						.onErrorMap(WebClientResponseException.class, KeycloakAdminService::toResponseStatusException));
+	}
+
 	private Mono<String> getAdminToken() {
 		return webClient.post()
 				.uri(TOKEN_PATH_TEMPLATE, MASTER_REALM)

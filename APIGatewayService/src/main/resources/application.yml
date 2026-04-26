@@ -35,6 +35,8 @@ spring:
           uri: ${COMBAT_SERVICE_URL:http://combat-service:8000}
           predicates:
             - Path=/api/combat/**
+          filters:
+            - StripPrefix=1
 
         - id: chat-route
           uri: ${CHAT_SERVICE_URL:http://chat-service:8000}
@@ -45,7 +47,6 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_URL}/realms/pokemon-drafter
           jwk-set-uri: ${KEYCLOAK_URL}/realms/pokemon-drafter/protocol/openid-connect/certs
 
 keycloak:

@@ -62,7 +62,6 @@ const POLL_INTERVAL_MS = 3000;
 
         @if (battle(); as b) {
 
-          <!-- DRAFT PHASE -->
           @if (b.status === 'DRAFT_PHASE') {
             <div class="draft">
               <h2 class="draft__title">Phase de draft</h2>
@@ -140,7 +139,6 @@ const POLL_INTERVAL_MS = 3000;
             </div>
           }
 
-          <!-- IN PROGRESS -->
           @if (b.status === 'IN_PROGRESS') {
             <div class="combat">
               <div class="combat__field">
@@ -201,7 +199,6 @@ const POLL_INTERVAL_MS = 3000;
             </div>
           }
 
-          <!-- FINISHED -->
           @if (b.status === 'FINISHED') {
             <div class="finished">
               @if (b.winnerId === myId()) {
