@@ -19,6 +19,27 @@ const DRAFT_ORDER: [number, number][] = [
   [1, 1], [0, 1], [1, 1], [0, 1], [1, 1], [0, 1]
 ];
 
+const TYPE_EFFECTIVENESS: Record<string, Record<string, number>> = {
+  normal: { rock: 0.5, ghost: 0, steel: 0.5 },
+  fire: { grass: 2, ice: 2, bug: 2, steel: 2, fire: 0.5, water: 0.5, rock: 0.5, dragon: 0.5 },
+  water: { fire: 2, ground: 2, rock: 2, water: 0.5, grass: 0.5, dragon: 0.5 },
+  electric: { water: 2, flying: 2, electric: 0.5, grass: 0.5, dragon: 0.5, ground: 0 },
+  grass: { water: 2, ground: 2, rock: 2, fire: 0.5, grass: 0.5, poison: 0.5, flying: 0.5, bug: 0.5, dragon: 0.5, steel: 0.5 },
+  ice: { grass: 2, ground: 2, flying: 2, dragon: 2, fire: 0.5, water: 0.5, ice: 0.5, steel: 0.5 },
+  fighting: { normal: 2, ice: 2, rock: 2, dark: 2, steel: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, fairy: 0.5, ghost: 0 },
+  poison: { grass: 2, fairy: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, psychic: 0.5 },
+  ground: { fire: 2, electric: 2, poison: 2, rock: 2, steel: 2, grass: 0.5, bug: 0.5, flying: 0, ice: 1, dragon: 1 },
+  flying: { grass: 2, fighting: 2, bug: 2, electric: 0.5, rock: 0.5, steel: 0.5 },
+  psychic: { fighting: 2, poison: 2, psychic: 0.5, steel: 0.5, dark: 0, ghost: 1 },
+  bug: { grass: 2, psychic: 2, dark: 2, fire: 0.5, fighting: 0.5, poison: 0.5, flying: 0.5, ghost: 0.5, steel: 0.5, fairy: 0.5 },
+  rock: { fire: 2, ice: 2, flying: 2, bug: 2, fighting: 0.5, ground: 0.5, steel: 0.5 },
+  ghost: { psychic: 2, ghost: 2, dark: 0.5, normal: 0, steel: 0.5 },
+  dragon: { dragon: 2, steel: 0.5, fairy: 0 },
+  dark: { psychic: 2, ghost: 2, fighting: 0.5, dark: 0.5, fairy: 0.5 },
+  steel: { ice: 2, rock: 2, fairy: 2, fire: 0.5, water: 0.5, electric: 0.5, steel: 0.5 },
+  fairy: { fighting: 2, dragon: 2, dark: 2, fire: 0.5, poison: 0.5, steel: 0.5 }
+};
+
 const POLL_INTERVAL_MS = 3000;
 
 @Component({
@@ -41,7 +62,6 @@ const POLL_INTERVAL_MS = 3000;
 
         @if (battle(); as b) {
 
-          <!-- DRAFT PHASE -->
           @if (b.status === 'DRAFT_PHASE') {
             <div class="draft">
               <h2 class="draft__title">Phase de draft</h2>
@@ -57,6 +77,7 @@ const POLL_INTERVAL_MS = 3000;
                   <button
                     class="pokemon-card"
                     [class.pokemon-card--selected]="isDraftSelected(p.id)"
+                    [class.pokemon-card--recommended]="isRecommended(p.id)"
                     [class.pokemon-card--disabled]="!isMyDraftTurn(b)"
                     [disabled]="!isMyDraftTurn(b)"
                     (click)="toggleDraftPick(b, p)"
@@ -68,17 +89,49 @@ const POLL_INTERVAL_MS = 3000;
                         <span class="type-badge type-badge--{{ t }}">{{ t }}</span>
                       }
                     </div>
+                    @if (isRecommended(p.id)) {
+                      <span class="pokemon-card__hint">Recommandé</span>
+                    }
                   </button>
                 }
               </div>
               @if (isMyDraftTurn(b)) {
-                <button
-                  class="view__action-btn"
-                  (click)="confirmDraft(b)"
-                  [disabled]="draftSelection().length !== draftPickCount(b) || submitting()"
-                >
-                  Confirmer ({{ draftSelection().length }}/{{ draftPickCount(b) }})
-                </button>
+                <div class="draft__actions-row">
+                  <button
+                    class="view__secondary-btn"
+                    (click)="recommendPokemon(b)"
+                    [disabled]="submitting() || myTeam(b).length === 0"
+                  >
+                    Recommandations
+                  </button>
+                  <button
+                    class="view__action-btn"
+                    (click)="confirmDraft(b)"
+                    [disabled]="draftSelection().length !== draftPickCount(b) || submitting()"
+                  >
+                    Confirmer ({{ draftSelection().length }}/{{ draftPickCount(b) }})
+                  </button>
+                </div>
+              }
+              @if (recommendations().length > 0) {
+                <div class="draft__recommendation-panel">
+                  <p class="draft__recommendation-title">Suggestions pour ton équipe</p>
+                  <div class="recommendation-list">
+                    @for (rec of recommendations(); track rec.id) {
+                      <div class="recommendation-card">
+                        <img [src]="rec.sprite" [alt]="rec.name" class="recommendation-card__sprite" />
+                        <div>
+                          <div class="recommendation-card__name">{{ rec.name }}</div>
+                          <div class="recommendation-card__types">
+                            @for (t of rec.types; track t) {
+                              <span class="type-badge type-badge--{{ t }}">{{ t }}</span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
               }
               @if (actionError()) {
                 <p class="view__error">{{ actionError() }}</p>
@@ -86,7 +139,6 @@ const POLL_INTERVAL_MS = 3000;
             </div>
           }
 
-          <!-- IN PROGRESS -->
           @if (b.status === 'IN_PROGRESS') {
             <div class="combat">
               <div class="combat__field">
@@ -147,7 +199,6 @@ const POLL_INTERVAL_MS = 3000;
             </div>
           }
 
-          <!-- FINISHED -->
           @if (b.status === 'FINISHED') {
             <div class="finished">
               @if (b.winnerId === myId()) {
@@ -211,6 +262,22 @@ const POLL_INTERVAL_MS = 3000;
       font-family: inherit;
       margin-top: 1rem;
     }
+    .view__secondary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      background: #f5f5f5;
+      color: #111;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 1rem;
+    }
+    .view__secondary-btn:hover:not(:disabled) { background: #ececec; }
     .view__action-btn:hover:not(:disabled) { background: #333; }
     .view__action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .view__forfeit-btn {
@@ -232,6 +299,68 @@ const POLL_INTERVAL_MS = 3000;
       grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
       gap: 0.75rem;
       margin-bottom: 1rem;
+    }
+    .draft__actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .draft__recommendation-panel {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .draft__recommendation-title {
+      margin: 0 0 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111;
+    }
+    .recommendation-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+      gap: 0.75rem;
+    }
+    .recommendation-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.9rem;
+      background: #fff;
+    }
+    .recommendation-card__sprite {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+    }
+    .recommendation-card__name {
+      font-weight: 700;
+      text-transform: capitalize;
+      margin-bottom: 0.25rem;
+    }
+    .recommendation-card__types { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+    .pokemon-card--recommended {
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.14);
+    }
+    .pokemon-card__hint {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.4rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     /* Pokemon cards */
@@ -324,6 +453,7 @@ export class BattleViewComponent implements OnInit, OnDestroy {
   readonly actionError = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly draftSelection = signal<number[]>([]);
+  readonly recommendations = signal<BattlePokemon[]>([]);
   readonly myId = signal<string | null>(null);
 
   private pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -396,6 +526,7 @@ export class BattleViewComponent implements OnInit, OnDestroy {
       next: updated => {
         this.battle.set(updated);
         this.draftSelection.set([]);
+        this.recommendations.set([]);
         this.submitting.set(false);
         this.cdr.markForCheck();
       },
@@ -405,6 +536,42 @@ export class BattleViewComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  recommendPokemon(b: Battle): void {
+    const team = this.myTeam(b);
+    const scored = b.draftPool
+      .map(p => ({
+        pokemon: p,
+        score: this.recommendationScore(p, team)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map(entry => entry.pokemon);
+
+    this.recommendations.set(scored);
+    this.cdr.markForCheck();
+  }
+
+  isRecommended(id: number): boolean {
+    return this.recommendations().some(p => p.id === id);
+  }
+
+  private recommendationScore(candidate: BattlePokemon, team: BattlePokemon[]): number {
+    const teamTypeSet = new Set(team.flatMap(p => p.types));
+    const candidateTypes = candidate.types;
+
+    const diversityBonus = candidateTypes.filter(t => !teamTypeSet.has(t)).length * 2;
+    const overlapPenalty = candidateTypes.filter(t => teamTypeSet.has(t)).length * 0.4;
+
+    const typeStrengthScore = candidateTypes.reduce((score, atkType) => {
+      const strengths = TYPE_EFFECTIVENESS[atkType] ?? {};
+      return score + Array.from(teamTypeSet).reduce((sub, defType) => {
+        return sub + (strengths[defType] ?? 1);
+      }, 0);
+    }, 0);
+
+    return typeStrengthScore + diversityBonus - overlapPenalty;
   }
 
   myTeam(b: Battle): BattlePokemon[] {
