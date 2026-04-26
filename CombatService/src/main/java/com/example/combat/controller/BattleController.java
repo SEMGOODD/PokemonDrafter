@@ -41,7 +41,7 @@ public class BattleController {
 	@GetMapping("/battle/{battleId}")
 	public Battle getBattle(@PathVariable String battleId, @AuthenticationPrincipal Jwt jwt) {
 		Battle battle = battleService.getBattle(battleId);
-		String callerId = jwt.getSubject();
+		String callerId = jwt.getClaimAsString("preferred_username");
 		if (!battle.getRedPlayerId().equals(callerId) && !battle.getBluePlayerId().equals(callerId)) {
 			throw new AccessDeniedException("You are not a participant of this battle");
 		}
@@ -50,18 +50,18 @@ public class BattleController {
 
 	@GetMapping("/battles/mine")
 	public List<Battle> getMyBattles(@AuthenticationPrincipal Jwt jwt) {
-		return battleService.getBattlesByPlayer(jwt.getSubject());
+		return battleService.getBattlesByPlayer(jwt.getClaimAsString("preferred_username"));
 	}
 
 	@GetMapping("/battles/active")
 	public List<Battle> getActiveBattles(@AuthenticationPrincipal Jwt jwt) {
-		return battleService.getActiveBattlesByPlayer(jwt.getSubject());
+		return battleService.getActiveBattlesByPlayer(jwt.getClaimAsString("preferred_username"));
 	}
 
 	@GetMapping("/battle/{battleId}/turns")
 	public List<TurnResult> getTurns(@PathVariable String battleId, @AuthenticationPrincipal Jwt jwt) {
 		Battle battle = battleService.getBattle(battleId);
-		String callerId = jwt.getSubject();
+		String callerId = jwt.getClaimAsString("preferred_username");
 		if (!battle.getRedPlayerId().equals(callerId) && !battle.getBluePlayerId().equals(callerId)) {
 			throw new AccessDeniedException("You are not a participant of this battle");
 		}
@@ -72,7 +72,7 @@ public class BattleController {
 	public TurnResult getTurn(@PathVariable String battleId, @PathVariable int turnNumber,
 			@AuthenticationPrincipal Jwt jwt) {
 		Battle battle = battleService.getBattle(battleId);
-		String callerId = jwt.getSubject();
+		String callerId = jwt.getClaimAsString("preferred_username");
 		if (!battle.getRedPlayerId().equals(callerId) && !battle.getBluePlayerId().equals(callerId)) {
 			throw new AccessDeniedException("You are not a participant of this battle");
 		}
@@ -101,7 +101,7 @@ public class BattleController {
 	}
 
 	private void requireSelf(Jwt jwt, String playerId) {
-		if (!jwt.getSubject().equals(playerId)) {
+		if (!jwt.getClaimAsString("preferred_username").equals(playerId)) {
 			throw new AccessDeniedException("You can only act for yourself");
 		}
 	}
