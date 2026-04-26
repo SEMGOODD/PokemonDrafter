@@ -205,8 +205,9 @@ export class BattleCreateComponent {
 
   createBattle(): void {
     const opp = this.opponent();
-    const myId = this.auth.getPlayerId();
     if (!opp) { this.createError.set('Aucun adversaire sélectionné.'); return; }
+
+    const myId = this.auth.getPlayerId();
     if (!myId) { this.createError.set('Token invalide ou expiré — reconnectez-vous.'); return; }
 
     this.creating.set(true);
@@ -214,14 +215,12 @@ export class BattleCreateComponent {
 
     this.api.createBattle({
       redPlayerId: myId,
-      bluePlayerId: opp.id,
+      bluePlayerId: opp.username,
       mode: this.selectedMode(),
       redTeam: [],
       blueTeam: []
     }).subscribe({
-      next: (battle: Battle) => {
-        this.router.navigate(['/combat/battle', battle.battleId]);
-      },
+      next: (battle: Battle) => this.router.navigate(['/combat/battle', battle.battleId]),
       error: (err: { error?: { error?: string } }) => {
         this.createError.set(err.error?.error ?? 'Impossible de créer le combat.');
         this.creating.set(false);
