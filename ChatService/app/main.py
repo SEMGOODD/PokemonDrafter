@@ -40,8 +40,8 @@ async def health():
 
 @app.websocket("/api/chat/{combat_id}")
 async def websocket_chat(websocket: WebSocket, combat_id: str):
-    user_id = websocket.headers.get("x-user-id")
-    user_color = websocket.headers.get("x-user-color")
+    user_id = websocket.headers.get("x-user-id") or websocket.query_params.get("userId")
+    user_color = websocket.headers.get("x-user-color") or websocket.query_params.get("color")
 
     if not user_id or not user_color:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)

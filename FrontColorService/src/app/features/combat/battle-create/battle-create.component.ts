@@ -12,6 +12,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { UserApiService, UserSearchResult } from '../../../core/api/user-api.service';
 import { PageFrameComponent } from '../../../shared/ui/page-frame/page-frame.component';
 import { Battle, BattleMode } from '../../../shared/types/combat.types';
+import { APP_ENV } from '../../../core/env/app-env';
 
 @Component({
   selector: 'app-battle-create',
@@ -178,6 +179,7 @@ export class BattleCreateComponent {
   readonly selectedMode = signal<BattleMode>('DRAFT');
   readonly creating = signal(false);
   readonly createError = signal<string | null>(null);
+  private readonly env = inject(APP_ENV);
 
   readonly modes: { value: BattleMode; label: string; description: string }[] = [
     { value: 'DRAFT', label: 'Draft', description: 'Choisissez vos Pokémon dans un pool commun.' },
@@ -209,13 +211,14 @@ export class BattleCreateComponent {
 
     const myId = this.auth.getPlayerId();
     if (!myId) { this.createError.set('Token invalide ou expiré — reconnectez-vous.'); return; }
+    const myColor = this.env.COLOR;
 
     this.creating.set(true);
     this.createError.set(null);
 
     this.api.createBattle({
-      redPlayerId: myId,
-      bluePlayerId: opp.username,
+      redPlayerId: myColor === 'red' ? myId : opp.username,
+      bluePlayerId: myColor === 'red' ? opp.username : myId,
       mode: this.selectedMode(),
       redTeam: [],
       blueTeam: []

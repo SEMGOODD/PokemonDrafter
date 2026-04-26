@@ -76,7 +76,7 @@ services:
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080" ]
       interval: 10s
       timeout: 5s
       retries: 15
@@ -266,6 +266,7 @@ services:
       KEYCLOAK_REALM: pokemon-drafter
       KEYCLOAK_CLIENT_ID: frontend-client
       FRONT_GENERAL_URL: http://localhost:4200
+      CHAT_WS_URL: ws://localhost:8006
     networks:
       - pokemon-net
 
@@ -284,6 +285,7 @@ services:
       KEYCLOAK_REALM: pokemon-drafter
       KEYCLOAK_CLIENT_ID: frontend-client
       FRONT_GENERAL_URL: http://localhost:4200
+      CHAT_WS_URL: ws://localhost:8006
     networks:
       - pokemon-net
 

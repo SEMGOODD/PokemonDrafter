@@ -10,6 +10,7 @@ export interface AppEnv {
   KEYCLOAK_CLIENT_ID: string;
   FRONT_RED_URL: string;
   FRONT_BLUE_URL: string;
+  CHAT_WS_URL?: string;
 }
 
 declare global {
