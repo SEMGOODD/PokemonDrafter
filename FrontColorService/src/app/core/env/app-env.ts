@@ -9,6 +9,7 @@ export interface AppEnv {
   KEYCLOAK_REALM: string;
   KEYCLOAK_CLIENT_ID: string;
   FRONT_GENERAL_URL: string;
+  CHAT_WS_URL?: string;
 }
 
 declare global {
