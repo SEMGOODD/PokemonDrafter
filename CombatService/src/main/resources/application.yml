@@ -25,6 +25,7 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: ${KEYCLOAK_URL:http://keycloak:8080}/realms/pokemon-drafter/protocol/openid-connect/certs
+          issuer-uri: ""
 
 pokemon:
   service:

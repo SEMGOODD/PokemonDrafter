@@ -5,11 +5,19 @@ minikube start --memory=4096 --cpus=4
 
 2. BUILD IMAGES INSIDE MINIKUBE'S DOCKER
 eval $(minikube docker-env)
-docker build -t gateway-service:v2 ./APIGatewayService
-docker build -t combat-service:v4 ./CombatService
-docker build -t pokemon-service:v1 ./PokemonService
-docker build -t chat-service:v1 ./ChatService
-...
+docker build -t gateway-service:v4 ./APIGatewayService
+docker build -t combat-service:v5 ./CombatService
+docker build -t chat-service:latest ./ChatService
+docker build -t pokemon-service:v3 ./PokemonService
+docker build -t front-general-service:latest ./FrontGeneralService
+docker build -t front-red-service:latest ./FrontColorService
+docker build -t front-blue-service:latest ./FrontColorService
+
+after finishing with minikube, it is better to stop it.
+# To stop minikube
+minikube stop
+and reset Docker context to local if you run the docker build inside minikube's docker daemon:
+eval $(minikube docker-env --unset)
 
 3. CREATE NAMESPACE AND DEPLOY
 kubectl create namespace pokemon-drafter

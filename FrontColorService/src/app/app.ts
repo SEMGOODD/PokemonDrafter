@@ -8,7 +8,7 @@ import { Router, RouterOutlet } from '@angular/router';
   styleUrl: './app.scss'
 })
 export class App implements OnInit {
-  constructor(private readonly router: Router) {}
+  constructor(private readonly router: Router) { }
 
   ngOnInit(): void {
     const params = new URLSearchParams(window.location.search);

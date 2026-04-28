@@ -33,6 +33,7 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return next(outReq).pipe(
     catchError(err => {
+      console.log('Interceptor error:', err.status, err.url);
       if (err.status === 401 && isGatewayRequest) {
         window.location.href = `${env.FRONT_GENERAL_URL}/dashboard`;
       }
