@@ -10,6 +10,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 
 @Configuration
 @EnableWebSecurity
@@ -40,7 +42,9 @@ public class SecurityConfig {
                 + "/realms/pokemon-drafter/protocol/openid-connect/certs"
             )
             .build();
-        decoder.setJwtValidator(JwtValidators.createDefault());
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+            new JwtTimestampValidator()
+        ));
         return decoder;
     }
 }

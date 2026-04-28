@@ -51,7 +51,7 @@ data:
     "accessTokenLifespan":3600,
     "ssoSessionIdleTimeout":1800,
     "ssoSessionMaxLifespan":36000,
-    "roles":{"realm":[{"name":"red_player","description":"Red team player role","composite":false,"clientRole":false},{"name":"blue_player","description":"Blue team player role","composite":false,"clientRole":false},{"name":"admin","description":"Administrator role","composite":false,"clientRole":false}]},"clients":[{"clientId":"gateway-client","name":"API Gateway Client","enabled":true,"clientAuthenticatorType":"client-secret","secret":"gateway-secret-key","redirectUris":["http://gateway-service/*"],"webOrigins":["http://gateway-service"],"publicClient":false,"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"serviceAccountsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email"]},{"clientId":"frontend-client","name":"Frontend Client","enabled":true,"publicClient":true,"redirectUris":["http://front-general-service/*","http://front-red-service/*","http://front-blue-service/*","http://pokemon-drafter.local/*"],"webOrigins":["http://front-general-service","http://front-red-service","http://front-blue-service","http://pokemon-drafter.local"],"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email","openid"]}],"users":[{"username":"red_player1","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player1","email":"red_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"red_player2","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player2","email":"red_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"blue_player1","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player1","email":"blue_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"blue_player2","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player2","email":"blue_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"admin","enabled":true,"emailVerified":true,"firstName":"Admin","lastName":"User","email":"admin@pokemon-drafter.local","credentials":[{"type":"password","value":"admin","temporary":false}],"realmRoles":["admin","default-roles-pokemon-drafter"]}]}
+    "roles":{"realm":[{"name":"red_player","description":"Red team player role","composite":false,"clientRole":false},{"name":"blue_player","description":"Blue team player role","composite":false,"clientRole":false},{"name":"admin","description":"Administrator role","composite":false,"clientRole":false}]},"clients":[{"clientId":"gateway-client","name":"API Gateway Client","enabled":true,"clientAuthenticatorType":"client-secret","secret":"gateway-secret-key","redirectUris": ["http://localhost:4200/*","http://localhost:4201/*","http://localhost:4202/*"],"webOrigins": ["http://localhost:4200","http://localhost:4201","http://localhost:4202"],"publicClient":false,"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"serviceAccountsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email"]},{"clientId":"frontend-client","name":"Frontend Client","enabled":true,"publicClient":true,"redirectUris": ["http://localhost:4200/*","http://localhost:4201/*","http://localhost:4202/*"],"webOrigins": ["http://localhost:4200","http://localhost:4201","http://localhost:4202"],"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email","openid"]}],"users":[{"username":"red_player1","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player1","email":"red_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"red_player2","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player2","email":"red_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"blue_player1","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player1","email":"blue_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"blue_player2","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player2","email":"blue_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"admin","enabled":true,"emailVerified":true,"firstName":"Admin","lastName":"User","email":"admin@pokemon-drafter.local","credentials":[{"type":"password","value":"admin","temporary":false}],"realmRoles":["admin","default-roles-pokemon-drafter"]}]}
 
 
 
@@ -109,9 +109,9 @@ metadata:
   name: pokemon-drafter-ingress
   namespace: pokemon-drafter
   annotations:
-    kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
+  ingressClassName: nginx
   rules:
   - host: pokemon-drafter.local
     http:
@@ -144,6 +144,20 @@ spec:
             name: gateway-service
             port:
               number: 80
+      - path: /auth
+        pathType: Prefix
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8080
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: chat-service
+            port:
+              number: 8000
 
 
 # ============================================================
@@ -193,17 +207,15 @@ spec:
             - name: KAFKA_PROCESS_ROLES
               value: "broker,controller"
             - name: KAFKA_LISTENERS
-              value: "PLAINTEXT://:9092,CONTROLLER://:9093,BROKER://:9094"
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://kafka:9092,BROKER://localhost:9094"
+              value: "PLAINTEXT://kafka:9092"
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-              value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,BROKER:PLAINTEXT"
+              value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
               value: "1@localhost:9093"
             - name: KAFKA_CONTROLLER_LISTENER_NAMES
               value: "CONTROLLER"
-            - name: KAFKA_INTER_BROKER_LISTENER_NAME
-              value: "BROKER"
             - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
               value: "1"
             - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
@@ -350,12 +362,13 @@ metadata:
   name: keycloak
   namespace: pokemon-drafter
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: keycloak
   ports:
     - port: 8080
       targetPort: 8080
+      nodePort: 30002
 
 ---
 apiVersion: apps/v1
@@ -411,12 +424,13 @@ metadata:
   name: gateway-service
   namespace: pokemon-drafter
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: gateway-service
   ports:
     - port: 80
       targetPort: 8080
+      nodePort: 30000
 
 ---
 apiVersion: apps/v1
@@ -436,7 +450,7 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          image: gateway-service:v2
+          image: gateway-service:v4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -444,6 +458,14 @@ spec:
             - configMapRef:
                 name: app-config
           env:
+            - name: CORS_ALLOWED_ORIGINS
+              value: "http://localhost:4200,http://localhost:4201,http://localhost:4202,http://pokemon-drafter.local,http://192.168.49.2:30001,http://192.168.49.2:30003,http://192.168.49.2:30004"
+            - name: KEYCLOAK_REALM
+              value: "pokemon-drafter"
+            - name: KEYCLOAK_ADMIN_USERNAME
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: "admin"
             - name: BACK_RED_URL
               value: "http://back-red-service:8000"
             - name: BACK_BLUE_URL
@@ -723,16 +745,16 @@ spec:
     spec:
       containers:
         - name: combat-service
-          image: combat-service:v4
+          image: combat-service:v5
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           env:
-            - name: SPRING_DATASOURCE_URL
+            - name: DATABASE_URL
               value: "jdbc:postgresql://postgres:5432/combat_db"
-            - name: SPRING_DATASOURCE_USERNAME
+            - name: DATABASE_USER
               value: "admin"
-            - name: SPRING_DATASOURCE_PASSWORD
+            - name: DATABASE_PASSWORD
               value: "1234"
             - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
               value: "health"
@@ -740,6 +762,8 @@ spec:
               value: "always"
             - name: SPRING_SECURITY_IGNORED
               value: "/actuator/**"
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+              value: ""
           envFrom:
             - configMapRef:
                 name: app-config
@@ -760,12 +784,13 @@ metadata:
   name: chat-service
   namespace: pokemon-drafter
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: chat-service
   ports:
     - port: 8000
       targetPort: 8000
+      nodePort: 30005
 
 ---
 apiVersion: apps/v1
@@ -866,12 +891,13 @@ metadata:
   name: front-general-service
   namespace: pokemon-drafter
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: front-general-service
   ports:
     - port: 80
       targetPort: 80
+      nodePort: 30001
 
 ---
 apiVersion: apps/v1
@@ -895,6 +921,21 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          env:
+            - name: GATEWAY_URL
+              value: "http://localhost:8000"
+            - name: KEYCLOAK_URL
+              value: "http://localhost:8080"
+            - name: KEYCLOAK_REALM
+              value: "pokemon-drafter"
+            - name: KEYCLOAK_CLIENT_ID
+              value: "frontend-client"
+            - name: FRONT_RED_URL
+              value: "http://localhost:4201"
+            - name: FRONT_BLUE_URL
+              value: "http://localhost:4202"
+            - name: CHAT_WS_URL
+              value: "ws://localhost:8006"
 
 # ============================================================
 #  FRONTEND RED  (Angular + Nginx)
@@ -907,12 +948,13 @@ metadata:
   name: front-red-service
   namespace: pokemon-drafter
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: front-red-service
   ports:
     - port: 80
       targetPort: 80
+      nodePort: 30003
 
 ---
 apiVersion: apps/v1
@@ -936,6 +978,21 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          env:
+            - name: COLOR
+              value: "red"
+            - name: GATEWAY_URL
+              value: "http://localhost:8000"
+            - name: KEYCLOAK_URL
+              value: "http://localhost:8080"
+            - name: KEYCLOAK_REALM
+              value: "pokemon-drafter"
+            - name: KEYCLOAK_CLIENT_ID
+              value: "frontend-client"
+            - name: FRONT_GENERAL_URL
+              value: "http://localhost:4200"
+            - name: CHAT_WS_URL
+              value: "ws://192.168.49.2:30005"
 
 # ============================================================
 #  FRONTEND BLUE  (Angular + Nginx)
@@ -948,12 +1005,13 @@ metadata:
   name: front-blue-service
   namespace: pokemon-drafter
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: front-blue-service
   ports:
     - port: 80
       targetPort: 80
+      nodePort: 30004
 
 ---
 apiVersion: apps/v1
@@ -977,3 +1035,18 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          env:
+            - name: COLOR
+              value: "blue"
+            - name: GATEWAY_URL
+              value: "http://localhost:8000"
+            - name: KEYCLOAK_URL
+              value: "http://localhost:8080"
+            - name: KEYCLOAK_REALM
+              value: "pokemon-drafter"
+            - name: KEYCLOAK_CLIENT_ID
+              value: "frontend-client"
+            - name: FRONT_GENERAL_URL
+              value: "http://localhost:4200"
+            - name: CHAT_WS_URL
+              value: "ws://192.168.49.2:30005"

@@ -6,16 +6,20 @@ import { APP_ENV, loadAppEnv } from './core/env/app-env';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { routes } from './app.routes';
 
-function saveTokenFromUrl(): () => void {
+function saveTokenFromUrl(): () => Promise<void> {
   return () => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      localStorage.setItem('access_token', token);
-      const clean = new URL(window.location.href);
-      clean.searchParams.delete('token');
-      window.history.replaceState({}, '', clean.toString());
-    }
+    return new Promise<void>((resolve) => {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      console.log('APP_INITIALIZER token:', token ? 'found' : 'not found');
+      if (token) {
+        localStorage.setItem('access_token', token);
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete('token');
+        window.history.replaceState({}, '', clean.toString());
+      }
+      resolve();
+    });
   };
 }
 

@@ -14,8 +14,7 @@ public class CorsConfig {
 	private static final List<String> ALLOWED_ORIGINS = List.of(
 			"http://localhost:4200",
 			"http://localhost:4201",
-			"http://localhost:4202"
-	);
+			"http://localhost:4202");
 
 	private static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
 

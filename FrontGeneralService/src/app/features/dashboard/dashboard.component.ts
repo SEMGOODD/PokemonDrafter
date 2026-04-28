@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 
 import { APP_ENV, TeamColor } from '../../core/env/app-env';
 import { AuthService } from '../../core/auth/auth.service';
@@ -128,11 +130,12 @@ export class DashboardComponent implements OnInit {
     this.returnPath = this.route.snapshot.queryParamMap.get('returnPath');
   }
 
-  private readonly payload = computed<JwtPayload | null>(() => {
-    const token = this.authService.getToken();
-    if (!token) return null;
-    return decodeJwtPayload(token);
-  });
+  private readonly payload = toSignal(
+    this.authService.token$.pipe(
+      map((token: string | null) => token ? decodeJwtPayload(token) : null)
+    ),
+    { initialValue: null }
+  );
 
   readonly displayName = computed(() => this.payload()?.preferred_username ?? DEFAULT_DISPLAY_NAME);
 
