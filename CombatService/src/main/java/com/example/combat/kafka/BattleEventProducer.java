@@ -90,7 +90,7 @@ public class BattleEventProducer {
 		try {
 			kafkaTemplate.send(topic, objectMapper.writeValueAsString(payload));
 		} catch (Exception e) {
-			// log and continue — Kafka failure must not block the battle
+			System.out.println("Erreur envoie message Kafka : " + e.getMessage());
 		}
 	}
 }
