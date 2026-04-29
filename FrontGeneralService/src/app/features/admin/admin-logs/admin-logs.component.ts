@@ -2,6 +2,8 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Subject, debounceTime, switchMap, takeUntil, timer } from 'rxjs';
+import { RouterLink } from '@angular/router';
+
 
 import { LogEntry, LogsApiService } from '../../../core/api/logs-api.service';
 import { PageFrameComponent } from '../../../shared/ui/page-frame/page-frame.component';
@@ -16,11 +18,12 @@ type Level = typeof LEVELS[number];
 @Component({
   selector: 'app-admin-logs',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageFrameComponent, ReactiveFormsModule, DatePipe],
+  imports: [PageFrameComponent, ReactiveFormsModule, DatePipe, RouterLink],
   template: `
     <app-page-frame>
       <section class="logs">
         <header class="logs__header">
+          <a class="logs__back" routerLink="/dashboard">← Retour au dashboard</a>
           <h1>Console admin — logs</h1>
           <p class="logs__hint">Logs de tous les services agrégés via Kafka. Mise à jour toutes les {{ refreshIntervalSeconds }} s.</p>
         </header>
@@ -107,6 +110,15 @@ type Level = typeof LEVELS[number];
     .logs__row--warn .logs__level { background: #fff3cd; color: #946100; }
     .logs__row--info .logs__level { background: #e0ecff; color: #1a4f99; }
     .logs__row--debug .logs__level { background: #eee; color: #555; }
+    .logs__back {
+      display: inline-block;
+      margin-bottom: 0.75rem;
+      color: #a00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .logs__back:hover { text-decoration: underline; }
   `]
 })
 export class AdminLogsComponent implements OnInit, OnDestroy {
