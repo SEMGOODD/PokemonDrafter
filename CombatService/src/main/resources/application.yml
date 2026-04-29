@@ -30,3 +30,8 @@ spring:
 pokemon:
   service:
     url: ${POKEMON_SERVICE_URL:http://pokemon-service:8000}
+
+logs:
+  kafka:
+    topic: logs-service
+    threshold: INFO

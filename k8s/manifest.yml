@@ -9,11 +9,9 @@ metadata:
   namespace: pokemon-drafter
 data:
   init.sql: |
-    CREATE DATABASE red_db;
-    CREATE DATABASE blue_db;
     CREATE DATABASE admin_db;
     CREATE DATABASE keycloak_db;
-    CREATE DATABASE combat_db; 
+    CREATE DATABASE combat_db;
 
 ---
 apiVersion: v1
@@ -26,9 +24,6 @@ data:
   REDIS_URL: "redis://redis:6379"
   KEYCLOAK_URL: "http://keycloak:8080"
   POKEAPI_BASE_URL: "https://pokeapi.co/api/v2"
-  DATABASE_URL_RED: "postgresql://admin:1234@postgres:5432/red_db"
-  DATABASE_URL_BLUE: "postgresql://admin:1234@postgres:5432/blue_db"
-  DATABASE_URL_ADMIN: "postgresql://admin:1234@postgres:5432/admin_db"
 
 ---
 apiVersion: v1
@@ -103,6 +98,7 @@ spec:
 #  INGRESS
 # ============================================================
 
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -226,6 +222,8 @@ spec:
               value: "0"
             - name: KAFKA_NUM_PARTITIONS
               value: "1"
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "true"
             - name: KAFKA_CLUSTER_ID
               value: "MkU3OEVBNTcwNTJENDM2Qk"
             - name: KAFKA_HEAP_OPTS
@@ -450,7 +448,7 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          image: gateway-service:v4
+          image: gateway-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -466,18 +464,12 @@ spec:
               value: "admin"
             - name: KEYCLOAK_ADMIN_PASSWORD
               value: "admin"
-            - name: BACK_RED_URL
-              value: "http://back-red-service:8000"
-            - name: BACK_BLUE_URL
-              value: "http://back-blue-service:8000"
             - name: POKEMON_SERVICE_URL
               value: "http://pokemon-service:8000"
             - name: COMBAT_SERVICE_URL
               value: "http://combat-service:8000"
             - name: CHAT_SERVICE_URL
               value: "http://chat-service:8000"
-            - name: RECOMMENDATION_SERVICE_URL
-              value: "http://recommendation-service:8000"
             - name: LOGS_SERVICE_URL
               value: "http://logs-service:8000"
           readinessProbe:
@@ -485,122 +477,6 @@ spec:
               path: /actuator/health
               port: 8080
             initialDelaySeconds: 30
-            periodSeconds: 10
-
-# ============================================================
-#  BACKEND RED  (Java Spring Boot)
-# ============================================================
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: back-red-service
-  namespace: pokemon-drafter
-spec:
-  type: ClusterIP
-  selector:
-    app: back-red-service
-  ports:
-    - port: 8000
-      targetPort: 8000
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: back-red-service
-  namespace: pokemon-drafter
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: back-red-service
-  template:
-    metadata:
-      labels:
-        app: back-red-service
-    spec:
-      containers:
-        - name: back-red-service
-          image: back-red-service:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8000
-          envFrom:
-            - configMapRef:
-                name: app-config
-          env:
-            - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: DATABASE_URL_RED
-            - name: ENCRYPTION_KEY
-              value: "supersecretkey123456"
-          readinessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8000
-            initialDelaySeconds: 25
-            periodSeconds: 10
-
-# ============================================================
-#  BACKEND BLUE  (Java Spring Boot)
-# ============================================================
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: back-blue-service
-  namespace: pokemon-drafter
-spec:
-  type: ClusterIP
-  selector:
-    app: back-blue-service
-  ports:
-    - port: 8000
-      targetPort: 8000
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: back-blue-service
-  namespace: pokemon-drafter
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: back-blue-service
-  template:
-    metadata:
-      labels:
-        app: back-blue-service
-    spec:
-      containers:
-        - name: back-blue-service
-          image: back-blue-service:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8000
-          envFrom:
-            - configMapRef:
-                name: app-config
-          env:
-            - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: DATABASE_URL_BLUE
-            - name: ENCRYPTION_KEY
-              value: "supersecretkey123456"
-          readinessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8000
-            initialDelaySeconds: 25
             periodSeconds: 10
 
 # ============================================================
@@ -639,7 +515,7 @@ spec:
     spec:
       containers:
         - name: pokemon-service
-          image: pokemon-service:v3
+          image: pokemon-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -655,56 +531,6 @@ spec:
                 name: app-config
           readinessProbe:
             tcpSocket:
-              port: 8000
-            initialDelaySeconds: 25
-            periodSeconds: 10
-
-# ============================================================
-#  RECOMMENDATION SERVICE  (Java Spring Boot)
-# ============================================================
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: recommendation-service
-  namespace: pokemon-drafter
-spec:
-  type: ClusterIP
-  selector:
-    app: recommendation-service
-  ports:
-    - port: 8000
-      targetPort: 8000
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: recommendation-service
-  namespace: pokemon-drafter
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: recommendation-service
-  template:
-    metadata:
-      labels:
-        app: recommendation-service
-    spec:
-      containers:
-        - name: recommendation-service
-          image: recommendation-service:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8000
-          envFrom:
-            - configMapRef:
-                name: app-config
-          readinessProbe:
-            httpGet:
-              path: /actuator/health
               port: 8000
             initialDelaySeconds: 25
             periodSeconds: 10
@@ -745,7 +571,7 @@ spec:
     spec:
       containers:
         - name: combat-service
-          image: combat-service:v5
+          image: combat-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -864,15 +690,17 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
-          envFrom:
-            - configMapRef:
-                name: app-config
           env:
             - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: DATABASE_URL_ADMIN
+              value: "jdbc:postgresql://postgres:5432/admin_db"
+            - name: DATABASE_USER
+              value: "admin"
+            - name: DATABASE_PASSWORD
+              value: "1234"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: KEYCLOAK_URL
+              value: "http://keycloak:8080"
           readinessProbe:
             httpGet:
               path: /actuator/health

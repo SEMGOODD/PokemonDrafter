@@ -1,59 +1,93 @@
-# FrontGeneralService
+# front-general-service
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.9.
+Frontend général : landing page, login/signup Keycloak, dashboard joueur, **console admin** (logs centralisés).
 
-## Development server
+Stack : Angular 20.3 · TypeScript · Nginx (production) · Node 22 (build).
 
-To start a local development server, run:
+---
+
+## Routes
+
+| Path | Composant | Garde |
+|---|---|---|
+| `/auth` | `AuthComponent` (login + signup) | publique |
+| `/callback` | `CallbackComponent` (OAuth code → token) | publique |
+| `/dashboard` | `DashboardComponent` (accueil joueur) | `authGuard` |
+| `/admin/logs` | `AdminLogsComponent` (console admin) | `adminGuard` |
+
+Voir [src/app/app.routes.ts](src/app/app.routes.ts).
+
+---
+
+## Authentification
+
+`AuthService` (`src/app/core/auth/auth.service.ts`) :
+
+- `login(username, password)` — token Keycloak via `password` grant.
+- `redirectToKeycloakLogin()` / `redirectToKeycloakRegister()` — redirection OAuth `authorization_code`.
+- `handleCallback(code)` — échange code → token.
+- `getToken()`, `isLoggedIn()`, `getRoles()`, `isAdmin()`.
+
+Le décodage du JWT (utilisation du claim `realm_access.roles`) est centralisé dans [src/app/core/auth/jwt.util.ts](src/app/core/auth/jwt.util.ts) — partagé entre `AuthService`, `DashboardComponent` et le guard admin.
+
+---
+
+## Console admin
+
+Route `/admin/logs`. Affiche les logs centralisés agrégés par `logs-service` :
+
+- Filtre par service (dropdown alimenté par `GET /api/logs/services`).
+- Filtre par niveau (`DEBUG`/`INFO`/`WARN`/`ERROR`).
+- Recherche texte sur le message (debounced 300 ms).
+- Polling automatique toutes les 5 s.
+- Badge coloré par niveau (rouge/jaune/bleu/gris).
+
+Le composant `AdminLogsComponent` ([src/app/features/admin/admin-logs/](src/app/features/admin/admin-logs/)) consomme `LogsApiService` qui appelle la gateway. La gateway revérifie le rôle `admin` côté serveur — le `adminGuard` ne sert qu'à masquer l'UI.
+
+Un lien "Console admin — logs" apparaît dans le dashboard si et seulement si le JWT contient `admin` dans `realm_access.roles`.
+
+---
+
+## Variables d'environnement (runtime)
+
+Injectées dans `window.__env__` à l'exécution Nginx via `docker-entrypoint.sh` qui produit `assets/env.js` à partir des variables Docker.
+
+| Variable | Exemple | Rôle |
+|---|---|---|
+| `GATEWAY_URL` | `http://localhost:8000` | API Gateway |
+| `KEYCLOAK_URL` | `http://localhost:8080` | Endpoint OAuth |
+| `KEYCLOAK_REALM` | `pokemon-drafter` | Realm |
+| `KEYCLOAK_CLIENT_ID` | `frontend-client` | Client public |
+| `FRONT_RED_URL` | `http://localhost:4201` | Frontend Rouge (CTA dashboard) |
+| `FRONT_BLUE_URL` | `http://localhost:4202` | Frontend Bleu |
+
+---
+
+## Lancer en local
+
+Via Docker Compose :
 
 ```bash
+docker compose up --build front-general-service gateway-service keycloak
+```
+
+Puis `http://localhost:4200/`.
+
+Via Angular CLI directement :
+
+```bash
+cd FrontGeneralService
+npm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+`ng serve` n'injecte pas `window.__env__` — il faut un `assets/env.js` local qui pointe vers les services.
 
-## Code scaffolding
+---
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Tests
 
 ```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
+cd FrontGeneralService
 ng test
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

@@ -1,271 +1,232 @@
 # PokemonDrafter
 
+Projet ICC : application web de duels Pokémon entre équipes Rouge et Bleu, recherche dans le Pokédex, recommandation et gestion d'équipes. Architecture microservices conteneurisée, déployable en Docker Compose ou Kubernetes.
+
+---
+
 ## Architecture
 
-### Service Map
+### Service map (services réellement implémentés)
 
-| Service | Tech | Port (Docker) | Description |
+| Service | Tech | Port (host → conteneur) | Rôle | README |
+|---|---|---|---|---|
+| **gateway-service** | Spring Boot 3.4.4 (réactif) | 8000 → 8080 | Point d'entrée unique, JWT Keycloak, routing | [APIGatewayService/README.md](APIGatewayService/README.md) |
+| **pokemon-service** | Spring Boot 4.0.2 | 8003 → 8000 | Proxy PokeAPI + cache Redis (FR/EN, types) | [PokemonService/README.md](PokemonService/README.md) |
+| **combat-service** | Spring Boot 4.0.2 | 8005 → 8000 | Simulation de duels (modes Draft, Built, Random) | [CombatService/README.md](CombatService/README.md) |
+| **chat-service** | FastAPI (Python 3.12) | 8006 → 8000 | Chat WebSocket par duel | [ChatService/README.md](ChatService/README.md) |
+| **logs-service** | Spring Boot 4.0.2 | 8007 → 8000 | Collecte centralisée + API admin | [LogsService/README.md](LogsService/README.md) |
+| **front-general-service** | Angular 20.3 + Nginx | 4200 → 80 | Landing, login, dashboard, console admin | [FrontGeneralService/README.md](FrontGeneralService/README.md) |
+| **front-red-service** | Angular 21.2 + Nginx | 4201 → 80 | Espace joueur Rouge (codebase `FrontColorService`) | [FrontColorService/README.md](FrontColorService/README.md) |
+| **front-blue-service** | Angular 21.2 + Nginx | 4202 → 80 | Espace joueur Bleu (même codebase) | [FrontColorService/README.md](FrontColorService/README.md) |
+| **kafka** | Apache Kafka KRaft | 9092 | Bus d'événements |
+| **postgres** | PostgreSQL 17 | 5432 | Bases : `combat_db`, `admin_db`, `keycloak_db` |
+| **redis** | Redis 7 | 6379 | Cache PokeAPI |
+| **keycloak** | Keycloak | 8080 | Identity Provider |
+| **mailpit** | Mailpit | 8025 (UI), 1025 (SMTP) | Faux SMTP pour intercepter les emails Keycloak en dev |
+
+### Topics Kafka
+
+| Topic | Producteur(s) | Consommateur(s) | Contenu |
 |---|---|---|---|
-| **gateway-service** | Spring Boot | 8000 → 8080 | API Gateway – single entry point |
-| **back-red-service** | Java Spring Boot | 8001 → 8000 | Backend for Red team users |
-| **back-blue-service** | Java Spring Boot | 8002 → 8000 | Backend for Blue team users |
-| **pokemon-service** | Java Spring Boot | 8003 → 8000 | PokeAPI calls + Redis cache |
-| **recommendation-service** | Java Spring Boot | 8004 → 8000 | Team completion engine |
-| **combat-service** | Java Spring Boot | 8005 → 8000 | Duel simulation |
-| **chat-service** | Java Spring Boot | 8006 → 8000 | In-game chat |
-| **logs-service** | Java Spring Boot | 8007 → 8000 | Service & chat logs (admin) |
-| **front-general-service** | Angular + Nginx | 4200 → 80 | Landing, login, admin console |
-| **front-red-service** | Angular + Nginx | 4201 → 80 | Red team portal |
-| **front-blue-service** | Angular + Nginx | 4202 → 80 | Blue team portal |
-| **kafka** | Apache Kafka | 9092 | Message broker |
-| **postgres** | PostgreSQL 17 | 5432 | Databases: red_db, blue_db, admin_db, keycloak_db |
-| **redis** | Redis 7 | 6379 | PokeAPI data cache |
-| **keycloak** | Keycloak | 8080 | Identity Provider (auth + tokens) |
+| `battle` | combat-service | (réservé) | Cycle de vie d'un duel : `BATTLE_STARTED`, `TURN_RESOLVED`, `BATTLE_ENDED`, `FORFEIT` |
+| `chat` | chat-service, combat-service (bot) | (réservé) | Messages chat |
+| `logs-service` | combat-service (events métier) ; tous les services Java via `KafkaLogbackAppender` ; chat-service via `publish_log` | logs-service | Logs centralisés (format unique) |
 
-### Architecture Diagram
+### Diagramme
 
 ```mermaid
 graph TB
-    subgraph "Frontends - Angular + Nginx"
-        FEGeneral["Frontend General<br/>(Login · Landing · Admin)<br/>:4200"]
-        FERed["Frontend Red<br/>:4201"]
-        FEBlue["Frontend Blue<br/>:4202"]
+    subgraph "Frontends"
+        FEGen["front-general<br/>:4200"]
+        FERed["front-red<br/>:4201"]
+        FEBlue["front-blue<br/>:4202"]
     end
 
     subgraph "Gateway"
-        GW["API Gateway<br/>(Spring Boot)<br/>:8000"]
+        GW["API Gateway<br/>:8000"]
     end
 
     subgraph "Identity"
-        IdP["Keycloak<br/>(Identity Provider)<br/>:8080"]
+        IdP["Keycloak<br/>:8080"]
     end
 
-    subgraph "Color-Specific Backends - Spring Boot"
-        BERed["Backend Red<br/>:8001"]
-        BEBlue["Backend Blue<br/>:8002"]
+    subgraph "Services métier"
+        SPokemon["pokemon-service<br/>:8003"]
+        SCombat["combat-service<br/>:8005"]
+        SChat["chat-service<br/>:8006"]
+        SLogs["logs-service<br/>:8007"]
     end
 
-    subgraph "Shared Services - Spring Boot"
-        SPokemon["Pokemon Service<br/>:8003"]
-        SReco["Recommendation Service<br/>:8004"]
-        SCombat["Combat Service<br/>:8005"]
-        SChat["Chat Service<br/>:8006"]
-        SLogs["Logs Service<br/>:8007"]
+    subgraph "Infra"
+        Kafka["Kafka<br/>topics: battle · chat · logs-service"]
+        Postgres["Postgres<br/>combat_db · admin_db · keycloak_db"]
+        Redis["Redis"]
+        PokeAPI["PokeAPI"]
     end
 
-    subgraph "Message Broker"
-        Kafka["Apache Kafka<br/>Topics: battle · recommendations ·<br/>chat · logs-service · logs-chat"]
-    end
-
-    subgraph "Databases - PostgreSQL"
-        DBRed["red_db<br/>(Users · Teams · BattleHistory)"]
-        DBBlue["blue_db<br/>(Users · Teams · BattleHistory)"]
-        DBAdmin["admin_db<br/>(Logs Chat · Logs Services)"]
-        DBKeycloak["keycloak_db"]
-    end
-
-    subgraph "Cache"
-        Redis["Redis<br/>:6379"]
-    end
-
-    subgraph "External"
-        PokeAPI["PokeAPI<br/>(pokeapi.co)"]
-    end
-
-    FEGeneral --> GW
+    FEGen --> GW
     FERed --> GW
     FEBlue --> GW
 
     GW --> IdP
-    GW --> BERed
-    GW --> BEBlue
     GW --> SPokemon
     GW --> SCombat
     GW --> SChat
-    GW --> SReco
     GW --> SLogs
 
-    IdP --> DBKeycloak
+    IdP --> Postgres
+    SCombat --> Postgres
+    SLogs --> Postgres
 
-    BERed --> DBRed
-    BEBlue --> DBBlue
-    SLogs --> DBAdmin
-
-    BERed --> Kafka
-    BEBlue --> Kafka
-    SCombat --> Kafka
-    SChat --> Kafka
-    SReco --> Kafka
-    SPokemon --> Kafka
-    SLogs --> Kafka
+    GW -.->|logs INFO+| Kafka
+    SPokemon -.->|logs INFO+| Kafka
+    SCombat -->|battle / chat / logs| Kafka
+    SChat -->|chat / logs| Kafka
+    Kafka --> SLogs
 
     SPokemon --> Redis
     SPokemon --> PokeAPI
-
-    BERed -.->|"Encrypted via Kafka"| BEBlue
 ```
-
-### Data Flow
-
-1. **User Authentication** — Frontend → Gateway → Keycloak → JWT token returned
-2. **Team Management** — Frontend Red/Blue → Gateway → Backend Red/Blue → red_db / blue_db
-3. **Pokédex Search** — Frontend → Gateway → Pokemon Service → Redis cache (or PokeAPI fallback)
-4. **Team Recommendation** — Frontend → Gateway → Recommendation Service (reads team via Kafka from Backend)
-5. **Duel** — Both backends publish moves to Kafka → Combat Service resolves → results published back via Kafka
-6. **Chat** — Frontend → Gateway → Chat Service → Kafka (logs topic) → Logs Service → admin_db
-7. **Inter-backend communication** — Red ↔ Blue backends do NOT communicate directly; all data passes through Kafka and is **encrypted with a shared private key**
 
 ---
 
-## Per-service Documentation
+## Lancement local
 
-Each microservice maintains its own README detailing its API, endpoints, configuration and internal architecture.
+### Prérequis
 
-| Service | Documentation |
-|---|---|
-| pokemon-service | [PokemonService/README.md](PokemonService/README.md) |
+- Docker Desktop.
+- Optionnel : `kubectl` + minikube pour la voie Kubernetes.
 
-> Add a row here whenever a new service ships its README.
-
----
-
-## Frontend — Theme system (`FrontColorService`)
-
-The Angular frontend is **one codebase** deployed as two containers (`front-red-service`, `front-blue-service`), parameterized at runtime by `COLOR=red|blue`.
-
-### Themes
-
-| Theme     | Trigger                                       | Visual                                             |
-|-----------|-----------------------------------------------|----------------------------------------------------|
-| `neutral` | Not authenticated (regardless of `COLOR` env) | Thin red line header + Honor Ball button (ring)    |
-| `red`     | Authenticated, `COLOR=red`                    | Red stripe header + black separator + Poké Ball    |
-| `blue`    | Authenticated, `COLOR=blue`                   | Blue stripe header + black separator + Super Ball  |
-| `love`    | Easter egg: 5 clicks on the pokeball in < 2 s | Pink stripe + Love Ball (toggle, re-spam to leave) |
-
-### `ThemeService` — public API
-
-Reactive service at `FrontColorService/src/app/core/theme/theme.service.ts`.
-
-```ts
-readonly theme: Signal<Theme>                         // current theme
-readonly pokeballVariant: Signal<PokeballVariant>     // pokeball asset name
-readonly isAuthenticated: Signal<boolean>             // readonly auth flag
-
-setAuthenticated(value: boolean): void                // triggers theme transition
-registerPokeballClick(): void                         // Love-Ball easter egg counter
-```
-
-### Animated theme transitions
-
-Every state change that affects the theme (login, logout, easter-egg toggle) is wrapped in a **circle-reveal animation** that originates from the pokeball button at the top-right. Implemented with the View Transitions API (`document.startViewTransition`) + a custom `@keyframes pokeball-reveal` in `src/styles.css`. Firefox falls back to the browser's default cross-fade — no ugly flicker.
-
-### Hooking up login / logout
-
-The Keycloak integration (in progress) must call these methods on auth state changes — do **not** mutate env vars or `data-theme` directly, otherwise the circle-reveal will not play:
-
-```ts
-// After Keycloak login success
-themeService.setAuthenticated(true);   // neutral → red/blue with circle reveal
-
-// After logout
-themeService.setAuthenticated(false);  // red/blue → neutral with circle reveal
-```
-
-The same method serves signup success flows.
-
-### Adding a new theme
-
-1. Add the theme name to `Theme` type in `src/app/core/theme/theme.types.ts`.
-2. Add `[data-theme="<name>"]` block in `src/styles.css` overriding `--theme-color` and `--separator-color`.
-3. Add a pokeball PNG at `public/assets/ui/<name>ball.png` (optional — only if the header pokeball variant differs) and update `POKEBALL_ASSETS` in the pokeball-button component if the asset is used.
-4. Update the `theme` computed in `ThemeService` to produce the new theme under the relevant condition.
-
----
-
-## Deployment
-
-### Docker Compose (local dev)
+### Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-### Kubernetes
+Tous les services démarrent ; attendre qu'ils soient `healthy` (~1-2 min, Keycloak est le plus long).
 
-```bash
-kubectl apply -f k8s/pokemon-drafter.yml
-kubectl apply -f k8s/manifest.yml -n pokemon-drafter
-```
+URLs :
+
+- Front général : http://localhost:4200
+- Front rouge : http://localhost:4201
+- Front bleu : http://localhost:4202
+- Gateway : http://localhost:8000
+- Keycloak admin : http://localhost:8080 (`admin` / `admin`)
+- Mailpit (faux SMTP) : http://localhost:8025
+
+### Kubernetes (minikube)
+
+Tutoriel pas-à-pas selon ton shell :
+
+- **Linux / macOS / Git Bash** → [k8s/RUNBOOK-linux.md](k8s/RUNBOOK-linux.md)
+- **Windows PowerShell** → [k8s/RUNBOOK-windows.md](k8s/RUNBOOK-windows.md)
+
+Les deux runbooks couvrent : build des images dans le daemon Docker de minikube, déploiement, port-forwards (rappel **important** pour conserver les ports navigateur), surveillance des pods, dépannage Kafka, reset PVC, tear down.
 
 ---
 
-## Pre-existing Users
+## Utilisateurs préexistants
 
-| Username | Password | Team |
+Définis dans `keycloak/realm-export.json` (importés au premier démarrage).
+
+| Username | Password | Rôle |
 |---|---|---|
-| `red_player1` | `password1` | Red |
-| `red_player2` | `password2` | Red |
-| `blue_player1` | `password1` | Blue |
-| `blue_player2` | `password2` | Blue |
-| `admin` | `admin` | Admin |
+| `red_player1` | `password1` | Joueur Rouge |
+| `red_player2` | `password2` | Joueur Rouge |
+| `blue_player1` | `password1` | Joueur Bleu |
+| `blue_player2` | `password2` | Joueur Bleu |
+| `admin` | `admin` | Administrateur |
 
-> **Note:** Update this table once Keycloak is seeded with actual user data.
-
----
-
-## Emails transactionnels (dev : Mailpit)
-
-Keycloak envoie des emails dans plusieurs flows : réinitialisation de mot de passe, vérification d'email, actions utilisateur (`execute-actions-email`). En **dev local**, ces emails sont **interceptés par Mailpit** — un faux serveur SMTP qui capture tout dans une UI web consultable.
-
-- **Serveur SMTP configuré** dans `keycloak/realm-export.json` → `smtpServer.host = mailpit:1025` (réseau Docker interne)
-- **Inbox** : `http://localhost:8025` (port Mailpit UI)
-- **Aucun email ne sort vers Internet** tant que la config pointe sur `mailpit`
-- Tu peux donc utiliser des adresses fictives comme `red_player1@pokemon-drafter.local` sans risque
-
-**En prod** : remplacer le bloc `smtpServer` du realm par les credentials d'un vrai SMTP (Gmail SMTP, SendGrid, SES, etc.) et supprimer le service `mailpit` du `docker-compose.yml`.
-
-> ⚠️ Si tu modifies `realm-export.json` (smtpServer, users, clients…), Keycloak ne ré-importe **qu'au premier démarrage** d'une BDD vide. Pour appliquer les changements : `docker compose down -v && docker compose up --build`.
+> Si tu modifies `realm-export.json`, Keycloak ne ré-importe **qu'au premier démarrage avec base vide**. Pour réimporter : `docker compose down -v && docker compose up --build`.
 
 ---
 
 ## Authentification par fonctionnalité
 
-Toutes les routes derrière la gateway ne sont pas identiques côté auth. Résumé :
-
-| Fonctionnalité | Route gateway | Auth Keycloak requise |
+| Fonctionnalité | Route gateway | Auth |
 |---|---|---|
-| Recherche Pokédex | `GET /api/pokemon/search` | Non (consultation publique) |
-| Fiche détail d'un Pokémon | `GET /api/pokemon/{id}` | Non (consultation publique) |
-| Matrice d'efficacité des types | `GET /api/types/effectiveness` | Non |
-| Ajout d'un Pokémon à une équipe | `POST /api/{color}/teams/{id}/pokemon` | **Oui** (rôle `red_player` ou `blue_player`) |
-| CRUD équipes | `/api/{color}/teams/**` | **Oui** |
-| Duel, chat, logs, recommendation | `/api/combat/**`, `/api/chat/**`, `/api/logs/**`, `/api/recommendation/**` | **Oui** |
+| Recherche Pokédex | `GET /api/pokemon/**`, `GET /api/types/**` | publique |
+| Login / signup / reset | `POST /api/auth/**` | publique |
+| Combat | `/api/combat/**` | JWT requis |
+| Chat WebSocket | `/api/chat/**` | JWT requis |
+| Console logs admin | `/api/logs/**` | JWT + rôle `admin` |
 
-La configuration de la gateway (`APIGatewayService/src/main/resources/application.yml`) et/ou `SecurityConfig.java` doit donc distinguer les routes publiques (`/api/pokemon/**`, `/api/types/**`) des routes authentifiées.
-
-### Tests
-
-- **Consultation (Pokédex)** : tests unitaires front classiques avec `HttpClient` mocké (`provideHttpClientTesting`).
-- **Ajout à une équipe** : tests unitaires front + tests back-color avec **base de données mockée** (Testcontainers PostgreSQL ou H2 en profil test). Ne jamais taper une vraie DB de dev.
+L'extraction du rôle Keycloak (claim `realm_access.roles`) est faite par `SecurityConfig` côté gateway et redoublée côté `logs-service` (défense en profondeur).
 
 ---
 
-## Third-party assets & licenses
+## Console admin — logs centralisés
 
-| Asset | Source | License | Location |
+Voir [LogsService/README.md](LogsService/README.md) pour le détail du flux.
+
+**Comment ça marche** :
+
+1. Les services Java (`gateway`, `pokemon`, `combat`) embarquent un appender Logback `KafkaLogbackAppender` qui publie tout log >= INFO sur le topic Kafka `logs-service`.
+2. `chat-service` (Python) fait pareil via `KafkaProducerClient.publish_log`.
+3. `combat-service` publie en plus des évènements métier structurés (`BATTLE_STARTED`, `BATTLE_ENDED`).
+4. `logs-service` consomme le topic (`@EnableKafka` + `@KafkaListener`), persiste dans `admin_db.log_entries`, et expose `GET /logs` pour la console.
+5. La gateway autorise `/api/logs/**` au seul rôle `admin`.
+6. Le frontend `front-general-service` affiche `/admin/logs` après login en tant que `admin` (filtres par service / par niveau / recherche texte, polling 5 s).
+
+**Tolérance au boot** : le broker Kafka est configuré avec `KAFKA_AUTO_CREATE_TOPICS_ENABLE=true`, et chaque `KafkaLogbackAppender` retente la publication pendant 60 s. Aucun log n'est perdu si Kafka démarre après un producer. Voir [LogsService/README.md](LogsService/README.md) section "Tolérance au démarrage".
+
+**Tester** :
+
+- Login `admin / admin` sur http://localhost:4200 → un bouton "Console admin — logs" apparaît.
+- En tant que joueur, l'URL `/admin/logs` redirige vers le dashboard et l'API renvoie 403.
+
+---
+
+## Emails transactionnels (dev — Mailpit)
+
+Keycloak envoie des emails (vérification, reset password, actions). En dev local, le SMTP de Keycloak pointe sur le service `mailpit` :
+
+- Inbox : http://localhost:8025
+- Aucun email ne sort vers Internet.
+- Adresses fictives type `red_player1@pokemon-drafter.local` OK.
+
+En prod : remplacer le bloc `smtpServer` du realm par un vrai SMTP et supprimer le service `mailpit`.
+
+---
+
+## Cahier des charges vs implémentation
+
+Pour faciliter l'évaluation, les écarts entre le PDF et la livraison actuelle :
+
+**Livré** : authentification Keycloak (joueurs + admin), Pokédex (recherche FR/EN, fiche détail, types, matrice d'efficacité), duels Spring Boot (modes Draft/Built/Random, formule d'avantage, persistence), chat WebSocket par duel, **console admin de logs centralisés**, déploiement Docker Compose et Kubernetes.
+
+**Non livré dans cette itération** :
+
+- `back-red-service` / `back-blue-service` séparés (CRUD équipes, scores, équipes par joueur). La logique combat est aujourd'hui mutualisée dans `combat-service`.
+- `recommendation-service` (bouton "Compléter une équipe").
+- Chiffrement par clé privée des échanges inter-backends (sans pertinence tant que les backends Rouge/Bleu sont mutualisés).
+- Page Mes Équipes / Historique des parties / sous-menu utilisateur (changement pseudo / avatar / couleur).
+- Mode Pioche complet côté UI.
+
+---
+
+## Conventions de code
+
+Voir [CLAUDE.md](CLAUDE.md) (règles non négociables : aucune émoji dans le code, aucun chiffre magique, single responsibility, zéro warning de build).
+
+---
+
+## Assets tiers & licences
+
+| Asset | Source | Licence | Emplacement |
 |---|---|---|---|
-| Pokémon type icons (18 SVG) | [James Watkins, 2022](https://github.com/jamesw2/pokemon-type-icons) | MIT | [images/icons/](images/icons/) and [FrontColorService/public/assets/types/](FrontColorService/public/assets/types/) |
+| Pokémon type icons (18 SVG) | [James Watkins, 2022](https://github.com/jamesw2/pokemon-type-icons) | MIT | [images/icons/](images/icons/) et [FrontColorService/public/assets/types/](FrontColorService/public/assets/types/) |
 
-The MIT license text is preserved next to the icons (`images/icons/LICENSE`, `FrontColorService/public/assets/types/LICENSE`).
+Le texte de la licence MIT est conservé à côté des icônes (`images/icons/LICENSE`, `FrontColorService/public/assets/types/LICENSE`).
 
 ---
 
-## DNS (Kubernetes)
+## DNS Kubernetes
 
-Configure a local DNS entry pointing to the gateway-service LoadBalancer IP:
+Configurer une entrée DNS locale pointant sur l'IP LoadBalancer de la gateway :
 
 ```
 <gateway-external-ip>  pokemon-drafter.local
 ```
 
-Access the application at `http://pokemon-drafter.local`.
+Accès : `http://pokemon-drafter.local`.

@@ -55,6 +55,11 @@ async def websocket_chat(websocket: WebSocket, combat_id: str):
 
     await websocket.accept()
     logger.info(f"[{combat_id}] {user_id} ({user_color}) connected")
+    await kafka_producer.publish_log(
+        level="INFO",
+        message=f"WebSocket connected: {user_id} ({user_color})",
+        context={"combat_id": combat_id, "user_id": user_id, "color": user_color},
+    )
 
     try:
         await room_manager.connect(combat_id, user_color, websocket)
@@ -118,4 +123,9 @@ async def websocket_chat(websocket: WebSocket, combat_id: str):
 
     except Exception as e:
         logger.error(f"[{combat_id}] Unexpected error for {user_id}: {e}")
+        await kafka_producer.publish_log(
+            level="ERROR",
+            message=f"WebSocket error: {e}",
+            context={"combat_id": combat_id, "user_id": user_id},
+        )
         await room_manager.disconnect(combat_id, user_color)

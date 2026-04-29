@@ -63,7 +63,9 @@ ws://localhost:8000/api/chat/{combat_id}   →   ws://chat-service:8000/api/chat
 
 ---
 
-## Kafka message schema (`chat` topic)
+## Kafka — topic `chat`
+
+Chaque message envoyé par un joueur est publié sur le topic `chat`.
 
 ```json
 {
@@ -75,7 +77,9 @@ ws://localhost:8000/api/chat/{combat_id}   →   ws://chat-service:8000/api/chat
 }
 ```
 
-The `logs-service` consumes this topic and persists to `admin_db`.
+## Kafka — topic `logs-service`
+
+Les évènements applicatifs (connexion/déconnexion WebSocket, erreurs) sont publiés via `KafkaProducerClient.publish_log` sur le topic centralisé `logs-service` consommé par `logs-service`. Mêmes champs que l'appender Logback Java (`service`, `level`, `timestamp`, `message`, `context`) — un format unique côté consommateur.
 
 ---
 
