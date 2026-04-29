@@ -29,7 +29,7 @@ connect.lock
 
 ### Logs ###
 *.log
-logs/
+/logs/
 
 ### Secrets / env ###
 .env
