@@ -302,7 +302,7 @@ public class BattleService {
 			entity.setUpdatedAt(Instant.now());
 			battleRepository.save(entity);
 		} catch (Exception e) {
-			// log — DB failure must not block the battle
+			System.out.println("Erreur sauvegarde DB : " + e.getMessage());
 		}
 	}
 

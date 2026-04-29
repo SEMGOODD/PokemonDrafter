@@ -81,10 +81,6 @@ public class CombatResolverService {
 		);
 	}
 
-	/**
-	 * F(A) = sum over each type T_i of A: product over each type T_j of B: effectiveness(T_i, T_j)
-	 * A white cell (missing entry) counts as 1.
-	 */
 	double computeF(List<String> attackerTypes, List<String> defenderTypes,
 			Map<String, Map<String, Double>> effectiveness) {
 		double total = 0;
@@ -107,7 +103,6 @@ public class CombatResolverService {
 			} else if (battle.allBlueKo() && !battle.allRedKo()) {
 				battle.setWinnerId(battle.getRedPlayerId());
 			}
-			// both allKo simultaneously = draw, winnerId stays null
 		}
 	}
 
