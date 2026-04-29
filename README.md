@@ -164,9 +164,11 @@ Voir [LogsService/README.md](LogsService/README.md) pour le détail du flux.
 1. Les services Java (`gateway`, `pokemon`, `combat`) embarquent un appender Logback `KafkaLogbackAppender` qui publie tout log >= INFO sur le topic Kafka `logs-service`.
 2. `chat-service` (Python) fait pareil via `KafkaProducerClient.publish_log`.
 3. `combat-service` publie en plus des évènements métier structurés (`BATTLE_STARTED`, `BATTLE_ENDED`).
-4. `logs-service` consomme le topic, persiste dans `admin_db.log_entries`, et expose `GET /logs` pour la console.
+4. `logs-service` consomme le topic (`@EnableKafka` + `@KafkaListener`), persiste dans `admin_db.log_entries`, et expose `GET /logs` pour la console.
 5. La gateway autorise `/api/logs/**` au seul rôle `admin`.
 6. Le frontend `front-general-service` affiche `/admin/logs` après login en tant que `admin` (filtres par service / par niveau / recherche texte, polling 5 s).
+
+**Tolérance au boot** : le broker Kafka est configuré avec `KAFKA_AUTO_CREATE_TOPICS_ENABLE=true`, et chaque `KafkaLogbackAppender` retente la publication pendant 60 s. Aucun log n'est perdu si Kafka démarre après un producer. Voir [LogsService/README.md](LogsService/README.md) section "Tolérance au démarrage".
 
 **Tester** :
 

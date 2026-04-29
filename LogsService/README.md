@@ -45,6 +45,18 @@ Champs manquants → défauts (`service: unknown`, `level: INFO`, `timestamp: no
 
 ---
 
+## Tolérance au démarrage
+
+L'ordre de boot des services n'est pas garanti (Kafka peut démarrer après un producer). Trois mécanismes garantissent qu'aucun log n'est perdu et que l'application monte dans n'importe quel ordre :
+
+1. **Auto-création des topics** — le broker Kafka est configuré avec `KAFKA_AUTO_CREATE_TOPICS_ENABLE=true` (manifest k8s + docker-compose). Quand le `KafkaLogbackAppender` publie son tout premier message, Kafka crée le topic à la volée. Plus de `UNKNOWN_TOPIC_OR_PARTITION` au boot.
+2. **Retries du producer** — chaque `KafkaLogbackAppender` est configuré avec `RETRIES=10` et `DELIVERY_TIMEOUT_MS=60s`. Si Kafka n'est pas joignable au boot du service, le producer retente pendant une minute avant de dropper, le temps que Kafka monte.
+3. **`@EnableKafka` sur `LogsApplication`** — Spring Boot 4 ne déclenche plus l'annotation-driven Kafka listener container automatiquement, il faut l'activer explicitement pour que le `@KafkaListener` du `LogEventConsumer` démarre.
+
+Côté Docker Compose, `pokemon-service`, `combat-service`, `chat-service` et `logs-service` ont `depends_on: kafka: condition: service_healthy` pour minimiser la fenêtre où un producer essaie de publier vers un Kafka pas encore prêt.
+
+---
+
 ## Endpoints exposés
 
 Base URL en local : `http://localhost:8007` ou `http://logs-service:8000` depuis un autre conteneur. Via gateway : `http://localhost:8000/api/logs/**` (rôle `admin` requis).

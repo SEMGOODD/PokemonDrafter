@@ -27,7 +27,8 @@ import java.util.Properties;
 public class KafkaLogbackAppender extends AppenderBase<ILoggingEvent> {
 
 	private static final int LINGER_MS = 50;
-	private static final int RETRIES = 0;
+	private static final int RETRIES = 10;
+	private static final int DELIVERY_TIMEOUT_MS = 60000;
 	private static final String CLIENT_ID_PREFIX = "logback-";
 
 	private String bootstrapServers;
@@ -62,6 +63,7 @@ public class KafkaLogbackAppender extends AppenderBase<ILoggingEvent> {
 		props.put(ProducerConfig.CLIENT_ID_CONFIG, CLIENT_ID_PREFIX + safeName(serviceName));
 		props.put(ProducerConfig.LINGER_MS_CONFIG, LINGER_MS);
 		props.put(ProducerConfig.RETRIES_CONFIG, RETRIES);
+		props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, DELIVERY_TIMEOUT_MS);
 		this.producer = new KafkaProducer<>(props);
 		super.start();
 	}
