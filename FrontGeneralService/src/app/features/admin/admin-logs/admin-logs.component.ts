@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Subject, debounceTime, switchMap, takeUntil, timer } from 'rxjs';
@@ -15,7 +16,7 @@ type Level = typeof LEVELS[number];
 @Component({
   selector: 'app-admin-logs',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageFrameComponent, ReactiveFormsModule],
+  imports: [PageFrameComponent, ReactiveFormsModule, DatePipe],
   template: `
     <app-page-frame>
       <section class="logs">
