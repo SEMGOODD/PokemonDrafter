@@ -23,6 +23,10 @@ eval $(minikube docker-env --unset)
 kubectl create namespace pokemon-drafter
 kubectl apply -f k8s/manifest.yml
 
+
+# 3.5 open port-forward to get access to the services in web browser
+./k8s/port-forward.sh
+
 4. WATCH PODS UNTIL STABLE
 kubectl get pods -n pokemon-drafter -w
 
