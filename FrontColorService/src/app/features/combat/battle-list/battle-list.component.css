@@ -1,0 +1,103 @@
+.battle-list {
+    max-width: 40rem;
+    margin: 2rem auto 0;
+    padding: 0 1rem;
+}
+
+.battle-list__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.battle-list__title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.battle-list__new {
+    padding: 0.5rem 1.25rem;
+    background: #111;
+    color: #fff;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.battle-list__new:hover {
+    background: #333;
+}
+
+.battle-list__section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin: 0 0 0.75rem;
+}
+
+.battle-list__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.battle-list__empty {
+    text-align: center;
+    color: #888;
+    margin-top: 3rem;
+}
+
+.battle-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 120ms ease;
+}
+
+.battle-card:hover {
+    border-color: #111;
+}
+
+.battle-card--active {
+    border-color: #f59e0b;
+}
+
+.battle-card__mode {
+    font-weight: 700;
+    font-size: 0.85rem;
+    background: #f0f0f0;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.battle-card__status {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.battle-card__result {
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.battle-card__result--win {
+    color: #16a34a;
+}
+
+.battle-card__id {
+    margin-left: auto;
+    color: #aaa;
+    font-size: 0.8rem;
+    font-family: monospace;
+}
