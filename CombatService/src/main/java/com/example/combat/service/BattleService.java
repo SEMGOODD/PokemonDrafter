@@ -284,7 +284,9 @@ public class BattleService {
 
 	private void persist(Battle battle) {
 		try {
+			System.out.println("PERSISTING battle: " + battle.getBattleId() + " status=" + battle.getStatus());
 			String json = objectMapper.writeValueAsString(battle);
+			System.out.println("JSON ok, length=" + json.length());
 			BattleEntity entity = battleRepository.findById(battle.getBattleId())
 					.orElse(new BattleEntity(
 							battle.getBattleId(),
@@ -301,8 +303,10 @@ public class BattleService {
 			entity.setBattleData(json);
 			entity.setUpdatedAt(Instant.now());
 			battleRepository.save(entity);
+			System.out.println("SAVED to DB ok");
 		} catch (Exception e) {
-			System.out.println("Erreur sauvegarde DB : " + e.getMessage());
+			System.out.println("PERSIST FAILED: " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 
@@ -310,7 +314,8 @@ public class BattleService {
 		try {
 			return objectMapper.readValue(entity.getBattleData(), Battle.class);
 		} catch (Exception e) {
-			throw new IllegalStateException("Failed to deserialize battle " + entity.getBattleId(), e);
+			throw new RuntimeException("Failed to persist battle: " + e.getMessage(), e);
+			// throw new IllegalStateException("Failed to deserialize battle " + entity.getBattleId(), e);
 		}
 	}
 
