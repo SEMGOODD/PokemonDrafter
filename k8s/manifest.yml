@@ -437,7 +437,7 @@ metadata:
   name: gateway-service
   namespace: pokemon-drafter
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: gateway-service
@@ -820,7 +820,7 @@ spec:
             - name: FRONT_GENERAL_URL
               value: "http://localhost:4200"
             - name: CHAT_WS_URL
-              value: "ws://192.168.49.2:30005"
+              value: "ws://localhost:8006"
 
 # ============================================================
 #  FRONTEND BLUE  (Angular + Nginx)
@@ -877,4 +877,4 @@ spec:
             - name: FRONT_GENERAL_URL
               value: "http://localhost:4200"
             - name: CHAT_WS_URL
-              value: "ws://192.168.49.2:30005"
+              value: "ws://localhost:8006"

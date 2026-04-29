@@ -63,6 +63,7 @@ export class BattleViewComponent implements OnInit, OnDestroy {
   readonly draftSelection = signal<number[]>([]);
   readonly recommendations = signal<BattlePokemon[]>([]);
   readonly myId = signal<string | null>(null);
+  readonly myColorCached = signal<'red' | 'blue' | null>(null);
 
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private battleId = '';
@@ -82,6 +83,9 @@ export class BattleViewComponent implements OnInit, OnDestroy {
     this.api.getBattle(this.battleId).subscribe({
       next: b => {
         this.battle.set(b);
+        if (!this.myColorCached()) {
+          this.myColorCached.set(this.myColor(b));
+        }
         this.error.set(null);
         this.cdr.markForCheck();
         if (b.status === 'FINISHED' && this.pollTimer) {

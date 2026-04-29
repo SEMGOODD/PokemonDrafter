@@ -170,7 +170,7 @@
 
             @if (b.status === 'DRAFT_PHASE' || b.status === 'IN_PROGRESS') {
             <div class="view__sidebar">
-                <app-chat [combatId]="b.battleId" [myColor]="myColor(b)" [userId]="myId()!" />
+                <app-chat [combatId]="b.battleId" [myColor]="myColorCached()!" [userId]="myId()!" />
             </div>
             }
 
