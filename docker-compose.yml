@@ -105,54 +105,12 @@ services:
       KEYCLOAK_REALM: pokemon-drafter
       KEYCLOAK_ADMIN_USERNAME: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      BACK_RED_URL: http://back-red-service:8000
-      BACK_BLUE_URL: http://back-blue-service:8000
       POKEMON_SERVICE_URL: http://pokemon-service:8000
       COMBAT_SERVICE_URL: http://combat-service:8000
       CHAT_SERVICE_URL: http://chat-service:8000
-      RECOMMENDATION_SERVICE_URL: http://recommendation-service:8000
       LOGS_SERVICE_URL: http://logs-service:8000
     networks:
       - pokemon-net
-  # # BACKENDS 
-
-  # back-red-service:
-  #   build: ./BackRedService
-  #   image: back-red-service
-  #   container_name: back-red-service
-  #   ports:
-  #     - "8001:8000"
-  #   depends_on:
-  #     - kafka
-  #     - postgres
-  #     - keycloak
-  #   environment:
-  #     DATABASE_URL: postgresql://admin:1234@postgres-db:5432/red_db
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #     KEYCLOAK_URL: http://keycloak:8080
-  #     ENCRYPTION_KEY: "${ENCRYPTION_KEY:-supersecretkey123456}"
-  #   networks:
-  #     - pokemon-net
-
-  # back-blue-service:
-  #   build: ./BackBlueService
-  #   image: back-blue-service
-  #   container_name: back-blue-service
-  #   ports:
-  #     - "8002:8000"
-  #   depends_on:
-  #     - kafka
-  #     - postgres
-  #     - keycloak
-  #   environment:
-  #     DATABASE_URL: postgresql://admin:1234@postgres-db:5432/blue_db
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #     KEYCLOAK_URL: http://keycloak:8080
-  #     ENCRYPTION_KEY: "${ENCRYPTION_KEY:-supersecretkey123456}"
-  #   networks:
-  #     - pokemon-net
-
-  # # SHARED SERVICES 
 
   pokemon-service:
     build: ./PokemonService
@@ -169,20 +127,6 @@ services:
       POKEAPI_BASE_URL: https://pokeapi.co/api/v2
     networks:
       - pokemon-net
-
-  # recommendation-service:
-  #   build: ./RecommendationService
-  #   container_name: recommendation-service
-  #   ports:
-  #     - "8004:8000"
-  #   depends_on:
-  #     - kafka
-  #     - redis
-  #   environment:
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #     REDIS_URL: redis://redis-cache:6379
-  #   networks:
-  #     - pokemon-net
 
   combat-service:
     build: ./CombatService
@@ -218,20 +162,25 @@ services:
     networks:
       - pokemon-net
 
-  # logs-service:
-  #   build: ./LogsService
-  #   image: logs-service
-  #   container_name: logs-service
-  #   ports:
-  #     - "8007:8000"
-  #   depends_on:
-  #     - kafka
-  #     - postgres
-  #   environment:
-  #     DATABASE_URL: postgresql://admin:1234@postgres-db:5432/admin_db
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #   networks:
-  #     - pokemon-net
+  logs-service:
+    build: ./LogsService
+    image: logs-service
+    container_name: logs-service
+    ports:
+      - "8007:8000"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres-db:5432/admin_db
+      DATABASE_USER: admin
+      DATABASE_PASSWORD: 1234
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+    networks:
+      - pokemon-net
 
   # # FRONTENDS  (Angular + Nginx)
 

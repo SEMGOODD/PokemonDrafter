@@ -5,7 +5,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 import { APP_ENV } from '../env/app-env';
 import { ThemeService } from '../theme/theme.service';
+import { decodeJwtPayload } from './jwt.util';
 
+const ROLE_ADMIN = 'admin';
 const STORAGE_KEY_ACCESS_TOKEN = 'access_token';
 const STORAGE_KEY_REFRESH_TOKEN = 'refresh_token';
 const KEYCLOAK_TOKEN_PATH = '/protocol/openid-connect/token';
@@ -122,6 +124,16 @@ export class AuthService {
 
   getToken(): string | null {
     return localStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
+  }
+
+  getRoles(): string[] {
+    const token = this.getToken();
+    if (!token) return [];
+    return decodeJwtPayload(token)?.realm_access?.roles ?? [];
+  }
+
+  isAdmin(): boolean {
+    return this.getRoles().includes(ROLE_ADMIN);
   }
 
   private tokenEndpoint(): string {

@@ -1,30 +1,24 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 
 import { APP_ENV, TeamColor } from '../../core/env/app-env';
 import { AuthService } from '../../core/auth/auth.service';
+import { decodeJwtPayload } from '../../core/auth/jwt.util';
 import { ThemeService } from '../../core/theme/theme.service';
 import { PageFrameComponent } from '../../shared/ui/page-frame/page-frame.component';
 
-const TOKEN_PAYLOAD_INDEX = 1;
-const JWT_MIN_SEGMENTS = 3;
 const ROLE_RED_PLAYER = 'red_player';
 const ROLE_BLUE_PLAYER = 'blue_player';
+const ROLE_ADMIN = 'admin';
+const ADMIN_LOGS_ROUTE = '/admin/logs';
 const DEFAULT_DISPLAY_NAME = 'joueur';
-const BASE64_URL_MINUS = /-/g;
-const BASE64_URL_UNDERSCORE = /_/g;
-
-interface JwtPayload {
-  preferred_username?: string;
-  realm_access?: { roles?: string[] };
-}
 
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageFrameComponent],
+  imports: [PageFrameComponent, RouterLink],
   template: `
     <app-page-frame>
       <section class="dashboard">
@@ -47,6 +41,9 @@ interface JwtPayload {
         <div class="dashboard__actions">
           @if (colorFrontUrl(); as url) {
             <a class="dashboard__cta" [href]="url">Accéder à l'espace de jeu</a>
+          }
+          @if (isAdmin()) {
+            <a class="dashboard__cta dashboard__cta--admin" [routerLink]="adminLogsRoute">Console admin — logs</a>
           }
           <button type="button" class="dashboard__logout" (click)="onLogout()">Se déconnecter</button>
         </div>
@@ -101,6 +98,12 @@ interface JwtPayload {
       background: #000000;
       transform: translateY(-1px);
     }
+    .dashboard__cta--admin {
+      background: #b00020;
+    }
+    .dashboard__cta--admin:hover {
+      background: #800018;
+    }
     .dashboard__logout {
       background: transparent;
       border: none;
@@ -121,6 +124,7 @@ export class DashboardComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   private returnPath: string | null = null;
+  readonly adminLogsRoute = ADMIN_LOGS_ROUTE;
 
   constructor() {
     effect(() => this.themeService.setUserColor(this.teamColor()));
@@ -146,6 +150,8 @@ export class DashboardComponent implements OnInit {
     return null;
   });
 
+  readonly isAdmin = computed(() => (this.payload()?.realm_access?.roles ?? []).includes(ROLE_ADMIN));
+
   readonly colorFrontUrl = computed(() => {
     const color = this.teamColor();
     const token = this.authService.getToken();
@@ -162,23 +168,5 @@ export class DashboardComponent implements OnInit {
 
   onLogout(): void {
     this.authService.logout();
-  }
-}
-
-function decodeJwtPayload(token: string): JwtPayload | null {
-  const parts = token.split('.');
-  if (parts.length < JWT_MIN_SEGMENTS) {
-    return null;
-  }
-  try {
-    const payload = parts[TOKEN_PAYLOAD_INDEX];
-    const normalised = payload
-      .replace(BASE64_URL_MINUS, '+')
-      .replace(BASE64_URL_UNDERSCORE, '/');
-    const bytes = Uint8Array.from(atob(normalised), c => c.charCodeAt(0));
-    const decoded = new TextDecoder().decode(bytes);
-    return JSON.parse(decoded) as JwtPayload;
-  } catch {
-    return null;
   }
 }

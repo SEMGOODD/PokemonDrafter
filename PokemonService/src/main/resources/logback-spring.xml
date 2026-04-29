@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProperty name="serviceName" source="spring.application.name" defaultValue="unknown"/>
+    <springProperty name="kafkaBootstrap" source="spring.kafka.bootstrap-servers" defaultValue="kafka:9092"/>
+    <springProperty name="kafkaTopic" source="logs.kafka.topic" defaultValue="logs-service"/>
+    <springProperty name="kafkaThreshold" source="logs.kafka.threshold" defaultValue="INFO"/>
+
+    <appender name="KAFKA" class="com.example.pokemon.logging.KafkaLogbackAppender">
+        <bootstrapServers>${kafkaBootstrap}</bootstrapServers>
+        <topic>${kafkaTopic}</topic>
+        <serviceName>${serviceName}</serviceName>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${kafkaThreshold}</level>
+        </filter>
+    </appender>
+
+    <appender name="ASYNC_KAFKA" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="KAFKA"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_KAFKA"/>
+    </root>
+</configuration>

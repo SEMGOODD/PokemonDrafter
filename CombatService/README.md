@@ -314,7 +314,8 @@ On restart, active battles are reloaded from the database on first access. Past 
 | `battle` | `BATTLE_ENDED` | Match over (with `winnerId`) |
 | `battle` | `FORFEIT` | Player forfeited |
 | `chat` | bot message | After each turn (summary + turn winner) |
-| `logs-service` | log | Battle start and end |
+| `logs-service` | business log | Battle start and end (via `BattleEventProducer`) |
+| `logs-service` | technical log | All `INFO+` Logback events (via `KafkaLogbackAppender` declared in `logback-spring.xml`) |
 
 ---
 

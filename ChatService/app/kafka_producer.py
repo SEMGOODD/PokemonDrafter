@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 CHAT_TOPIC = "chat"
+LOGS_TOPIC = "logs-service"
+SERVICE_NAME = "chat-service"
 
 
 class KafkaProducerClient:
@@ -74,3 +76,30 @@ class KafkaProducerClient:
             logger.debug(f"[{combat_id}] Kafka ← {record}")
         except Exception as e:
             logger.error(f"[{combat_id}] Failed to publish to Kafka: {e}")
+
+    async def publish_log(
+        self,
+        level: str,
+        message: str,
+        context: dict | None = None,
+    ) -> None:
+        """
+        Publie un log applicatif sur le topic centralisé. Mêmes champs que
+        l'appender Logback Java (service, level, timestamp, message, context)
+        afin que le LogsService consomme un format unique.
+        """
+        if self._producer is None:
+            return
+
+        record = {
+            "service": SERVICE_NAME,
+            "level": level.upper(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "message": message,
+            "context": context or {},
+        }
+
+        try:
+            await self._producer.send_and_wait(LOGS_TOPIC, value=record)
+        except Exception as e:
+            logger.warning(f"Failed to publish log to Kafka: {e}")
