@@ -1,0 +1,380 @@
+.view {
+    max-width: 80rem;
+    margin: 2rem auto 0;
+    padding: 0 1rem;
+}
+
+.view__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.view__back {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.view__back:hover {
+    color: #111;
+}
+
+.view__status {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #888;
+}
+
+.view__error {
+    color: #dc2626;
+    margin: 0.5rem 0;
+}
+
+/* Two-column layout */
+.view__layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.view__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.view__sidebar {
+    width: 22rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 1rem;
+}
+
+.view__action-btn {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 1rem;
+}
+
+.view__secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    background: #f5f5f5;
+    color: #111;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 1rem;
+}
+
+.view__secondary-btn:hover:not(:disabled) {
+    background: #ececec;
+}
+
+.view__action-btn:hover:not(:disabled) {
+    background: #333;
+}
+
+.view__action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.view__forfeit-btn {
+    background: transparent;
+    border: none;
+    color: #dc2626;
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+}
+
+/* Draft */
+.draft__title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+}
+
+.draft__turn {
+    margin: 0 0 1rem;
+    color: #555;
+}
+
+.draft__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.draft__actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.draft__recommendation-panel {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.draft__recommendation-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111;
+}
+
+.recommendation-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.75rem;
+}
+
+.recommendation-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.9rem;
+    background: #fff;
+}
+
+.recommendation-card__sprite {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+.recommendation-card__name {
+    font-weight: 700;
+    text-transform: capitalize;
+    margin-bottom: 0.25rem;
+}
+
+.recommendation-card__types {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.pokemon-card--recommended {
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.14);
+}
+
+.pokemon-card__hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.4rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Pokemon cards */
+.pokemon-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    border: 2px solid #e5e5e5;
+    border-radius: 0.5rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 120ms;
+}
+
+.pokemon-card:hover:not(:disabled) {
+    border-color: #aaa;
+}
+
+.pokemon-card--selected {
+    border-color: #111;
+    background: #f8f8f8;
+}
+
+.pokemon-card--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pokemon-card--small {
+    padding: 0.375rem;
+}
+
+.pokemon-card__sprite {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}
+
+.pokemon-card__name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.pokemon-card__types {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Type badges */
+.type-badge {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    background: #e5e5e5;
+    text-transform: capitalize;
+}
+
+/* Combat field */
+.combat__field {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+}
+
+.combat__side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.combat__label {
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+.combat__sprite {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+}
+
+.combat__pokemon-name {
+    font-weight: 700;
+    text-transform: capitalize;
+    margin: 0;
+}
+
+.combat__pokemon-name--ko {
+    color: #dc2626;
+}
+
+.combat__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.combat__actions-title {
+    font-weight: 600;
+    margin: 0;
+}
+
+.combat__switch-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.combat__waiting {
+    color: #888;
+    font-style: italic;
+}
+
+/* Finished */
+.finished {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.finished__result {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.finished__result--win {
+    color: #16a34a;
+}
+
+.finished__result--loss {
+    color: #dc2626;
+}
+
+.finished__turns {
+    color: #888;
+    margin: 0;
+}
+
+.finished__history {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.turn-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    background: #f8f8f8;
+    border-radius: 4px;
+}
+
+.turn-row__num {
+    font-weight: 700;
+    color: #888;
+    min-width: 3.5rem;
+}
+
+.turn-row__ko {
+    color: #dc2626;
+    font-weight: 600;
+}

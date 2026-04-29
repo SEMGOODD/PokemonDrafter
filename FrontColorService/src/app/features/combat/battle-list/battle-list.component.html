@@ -1,0 +1,44 @@
+<app-page-frame>
+    <div class="battle-list">
+        <div class="battle-list__header">
+            <h1 class="battle-list__title">Mes combats</h1>
+            <a routerLink="/combat/new" class="battle-list__new">+ Nouveau combat</a>
+        </div>
+
+        @if (activeBattles().length > 0) {
+        <section>
+            <h2 class="battle-list__section-title">En cours</h2>
+            <div class="battle-list__grid">
+                @for (b of activeBattles(); track b.battleId) {
+                <a class="battle-card battle-card--active" [routerLink]="['/combat/battle', b.battleId]">
+                    <span class="battle-card__mode">{{ b.mode }}</span>
+                    <span class="battle-card__status">{{ statusLabel(b.status) }}</span>
+                    <span class="battle-card__id">{{ b.battleId.slice(0, 8) }}…</span>
+                </a>
+                }
+            </div>
+        </section>
+        }
+
+        @if (finishedBattles().length > 0) {
+        <section>
+            <h2 class="battle-list__section-title">Terminés</h2>
+            <div class="battle-list__grid">
+                @for (b of finishedBattles(); track b.battleId) {
+                <a class="battle-card" [routerLink]="['/combat/battle', b.battleId]">
+                    <span class="battle-card__mode">{{ b.mode }}</span>
+                    <span class="battle-card__result" [class.battle-card__result--win]="isWinner(b)">
+                        {{ isWinner(b) ? 'Victoire' : 'Défaite' }}
+                    </span>
+                    <span class="battle-card__id">{{ b.battleId.slice(0, 8) }}…</span>
+                </a>
+                }
+            </div>
+        </section>
+        }
+
+        @if (activeBattles().length === 0 && finishedBattles().length === 0 && !loading()) {
+        <p class="battle-list__empty">Aucun combat pour l'instant. Lance ton premier duel !</p>
+        }
+    </div>
+</app-page-frame>

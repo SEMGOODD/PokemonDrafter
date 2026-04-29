@@ -1,0 +1,180 @@
+<app-page-frame>
+    <div class="view">
+        <div class="view__header">
+            <a routerLink="/combat" class="view__back">← Mes combats</a>
+            @if (battle()) {
+            <span class="view__status">{{ statusLabel(battle()!.status) }}</span>
+            }
+        </div>
+
+        @if (error()) {
+        <p class="view__error">{{ error() }}</p>
+        }
+
+        @if (battle(); as b) {
+        <div class="view__layout">
+
+            <div class="view__main">
+
+                @if (b.status === 'DRAFT_PHASE') {
+                <div class="draft">
+                    <h2 class="draft__title">Phase de draft</h2>
+                    <p class="draft__turn">
+                        @if (isMyDraftTurn(b)) {
+                        C'est ton tour ! Choisir <strong>{{ draftPickCount(b) }}</strong> Pokémon.
+                        } @else {
+                        En attente du choix adverse…
+                        }
+                    </p>
+                    <div class="draft__grid">
+                        @for (p of b.draftPool; track p.id) {
+                        <button class="pokemon-card" [class.pokemon-card--selected]="isDraftSelected(p.id)"
+                            [class.pokemon-card--recommended]="isRecommended(p.id)"
+                            [class.pokemon-card--disabled]="!isMyDraftTurn(b)" [disabled]="!isMyDraftTurn(b)"
+                            (click)="toggleDraftPick(b, p)">
+                            <img [src]="p.sprite" [alt]="p.name" class="pokemon-card__sprite" />
+                            <span class="pokemon-card__name">{{ p.name }}</span>
+                            <div class="pokemon-card__types">
+                                @for (t of p.types; track t) {
+                                <span class="type-badge type-badge--{{ t }}">{{ t }}</span>
+                                }
+                            </div>
+                            @if (isRecommended(p.id)) {
+                            <span class="pokemon-card__hint">Recommandé</span>
+                            }
+                        </button>
+                        }
+                    </div>
+                    @if (isMyDraftTurn(b)) {
+                    <div class="draft__actions-row">
+                        <button class="view__secondary-btn" (click)="recommendPokemon(b)"
+                            [disabled]="submitting() || myTeam(b).length === 0">
+                            Recommandations
+                        </button>
+                        <button class="view__action-btn" (click)="confirmDraft(b)"
+                            [disabled]="draftSelection().length !== draftPickCount(b) || submitting()">
+                            Confirmer ({{ draftSelection().length }}/{{ draftPickCount(b) }})
+                        </button>
+                    </div>
+                    }
+                    @if (recommendations().length > 0) {
+                    <div class="draft__recommendation-panel">
+                        <p class="draft__recommendation-title">Suggestions pour ton équipe</p>
+                        <div class="recommendation-list">
+                            @for (rec of recommendations(); track rec.id) {
+                            <div class="recommendation-card">
+                                <img [src]="rec.sprite" [alt]="rec.name" class="recommendation-card__sprite" />
+                                <div>
+                                    <div class="recommendation-card__name">{{ rec.name }}</div>
+                                    <div class="recommendation-card__types">
+                                        @for (t of rec.types; track t) {
+                                        <span class="type-badge type-badge--{{ t }}">{{ t }}</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                        </div>
+                    </div>
+                    }
+                    @if (actionError()) {
+                    <p class="view__error">{{ actionError() }}</p>
+                    }
+                </div>
+                }
+
+                @if (b.status === 'IN_PROGRESS') {
+                <div class="combat">
+                    <div class="combat__field">
+                        <div class="combat__side combat__side--opponent">
+                            <p class="combat__label">Adversaire</p>
+                            @if (opponentActive(b); as opp) {
+                            <img [src]="opp.sprite" [alt]="opp.name" class="combat__sprite" />
+                            <p class="combat__pokemon-name" [class.combat__pokemon-name--ko]="opp.ko">
+                                {{ opp.name }} {{ opp.ko ? '(KO)' : '' }}
+                            </p>
+                            }
+                        </div>
+                        <div class="combat__side combat__side--mine">
+                            <p class="combat__label">Ton Pokémon actif</p>
+                            @if (myActive(b); as mine) {
+                            <img [src]="mine.sprite" [alt]="mine.name" class="combat__sprite" />
+                            <p class="combat__pokemon-name" [class.combat__pokemon-name--ko]="mine.ko">
+                                {{ mine.name }} {{ mine.ko ? '(KO)' : '' }}
+                            </p>
+                            }
+                        </div>
+                    </div>
+
+                    @if (!hasActed(b)) {
+                    <div class="combat__actions">
+                        <p class="combat__actions-title">Choisis ton action</p>
+                        @if (!myActive(b)?.ko) {
+                        <button class="view__action-btn" (click)="submitStay(b)" [disabled]="submitting()">
+                            Rester
+                        </button>
+                        }
+                        <div class="combat__switch-list">
+                            @for (p of myTeam(b); track p.id) {
+                            @if (!p.ko && p.id !== myActive(b)?.id) {
+                            <button class="pokemon-card pokemon-card--small" (click)="submitSwitch(b, p)"
+                                [disabled]="submitting()">
+                                <img [src]="p.sprite" [alt]="p.name" class="pokemon-card__sprite" />
+                                <span class="pokemon-card__name">{{ p.name }}</span>
+                            </button>
+                            }
+                            }
+                        </div>
+                    </div>
+                    } @else {
+                    <p class="combat__waiting">Action soumise, en attente de l'adversaire…</p>
+                    }
+
+                    @if (actionError()) {
+                    <p class="view__error">{{ actionError() }}</p>
+                    }
+
+                    <button class="view__forfeit-btn" (click)="confirmForfeit(b)" [disabled]="submitting()">
+                        Abandonner
+                    </button>
+                </div>
+                }
+
+                @if (b.status === 'FINISHED') {
+                <div class="finished">
+                    @if (b.winnerId === myId()) {
+                    <p class="finished__result finished__result--win">🏆 Victoire !</p>
+                    } @else {
+                    <p class="finished__result finished__result--loss">Défaite…</p>
+                    }
+                    <p class="finished__turns">{{ b.turnHistory.length }} tour(s) joué(s)</p>
+                    @if (b.turnHistory.length > 0) {
+                    <div class="finished__history">
+                        @for (t of b.turnHistory; track t.turnNumber) {
+                        <div class="turn-row">
+                            <span class="turn-row__num">Tour {{ t.turnNumber }}</span>
+                            <span>{{ t.redPokemonName }} vs {{ t.bluePokemonName }}</span>
+                            @if (t.redKo) { <span class="turn-row__ko">{{ t.redPokemonName }} KO</span> }
+                            @if (t.blueKo) { <span class="turn-row__ko">{{ t.bluePokemonName }} KO</span> }
+                        </div>
+                        }
+                    </div>
+                    }
+                    <a routerLink="/combat" class="view__action-btn" style="text-decoration:none; text-align:center;">
+                        Retour à mes combats
+                    </a>
+                </div>
+                }
+
+            </div>
+
+            @if (b.status === 'DRAFT_PHASE' || b.status === 'IN_PROGRESS') {
+            <div class="view__sidebar">
+                <app-chat [combatId]="b.battleId" [myColor]="myColor(b)" [userId]="myId()!" />
+            </div>
+            }
+
+        </div>
+        }
+    </div>
+</app-page-frame>

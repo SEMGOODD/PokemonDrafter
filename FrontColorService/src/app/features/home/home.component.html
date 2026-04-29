@@ -1,0 +1,18 @@
+<app-page-frame>
+    <div class="home">
+        <h1 class="home__title">Bienvenue !</h1>
+        <p class="home__subtitle">Prêt à affronter l'équipe adverse ?</p>
+
+        <div class="home__actions">
+            <a routerLink="/pokedex" class="home__cta">Ouvrir le Pokédex</a>
+
+            @if (loggedIn()) {
+            <a routerLink="/combat" class="home__cta home__cta--secondary">Mes combats</a>
+            } @else {
+            <a [href]="accountUrl" class="home__cta home__cta--secondary">Se connecter</a>
+            }
+        </div>
+
+        <a class="home__account" [href]="accountUrl">Mon compte</a>
+    </div>
+</app-page-frame>

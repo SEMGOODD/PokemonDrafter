@@ -1,0 +1,31 @@
+<div class="chat">
+    <div class="chat__header">
+        <span class="chat__title">Chat</span>
+        <span class="chat__dot" [class.chat__dot--on]="connected()"></span>
+    </div>
+
+    <div class="chat__messages" #messagesEl>
+        @for (msg of messages(); track $index) {
+        @if (msg.type === 'system') {
+        <div class="chat__system">{{ msg.message }}</div>
+        } @else {
+        <div class="chat__bubble" [class.chat__bubble--mine]="msg.color === myColor"
+            [class.chat__bubble--red]="msg.color === 'red'" [class.chat__bubble--blue]="msg.color === 'blue'">
+            <span class="chat__bubble-text">{{ msg.message }}</span>
+        </div>
+        }
+        }
+
+        @if (messages().length === 0) {
+        <p class="chat__empty">Aucun message pour l'instant…</p>
+        }
+    </div>
+
+    <div class="chat__input-row">
+        <input class="chat__input" type="text" placeholder="Envoyer un message…" [(ngModel)]="draft"
+            [disabled]="!connected()" (keydown.enter)="send()" maxlength="300" />
+        <button class="chat__send" (click)="send()" [disabled]="!connected() || !draft.trim()" aria-label="Envoyer">
+            ↑
+        </button>
+    </div>
+</div>

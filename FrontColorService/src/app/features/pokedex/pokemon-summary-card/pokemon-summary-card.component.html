@@ -1,0 +1,14 @@
+<a class="card" [routerLink]="['/pokedex', pokemon().id]">
+    <div class="card__sprite-wrap">
+        <img class="card__sprite" [src]="pokemon().sprite" [alt]="pokemon().name" draggable="false" />
+    </div>
+    <div class="card__meta">
+        <span class="card__id">#{{ paddedId() }}</span>
+        <h3 class="card__name">{{ pokemon().name }}</h3>
+        <div class="card__types">
+            @for (type of pokemon().types; track type) {
+            <app-type-badge [type]="type" />
+            }
+        </div>
+    </div>
+</a>

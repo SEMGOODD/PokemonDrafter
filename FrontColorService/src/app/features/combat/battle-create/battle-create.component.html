@@ -1,0 +1,51 @@
+<app-page-frame>
+    <div class="create">
+        <div class="create__header">
+            <a routerLink="/combat" class="create__back">← Retour</a>
+            <h1 class="create__title">Nouveau combat</h1>
+        </div>
+
+        <section class="create__section">
+            <label class="create__label">Adversaire</label>
+            <div class="create__search-row">
+                <input class="create__input" type="text" placeholder="Nom d'utilisateur…" [(ngModel)]="opponentUsername"
+                    (keydown.enter)="searchOpponent()" />
+                <button class="create__btn" (click)="searchOpponent()" [disabled]="searching()">
+                    {{ searching() ? '…' : 'Chercher' }}
+                </button>
+            </div>
+
+            @if (searchError()) {
+            <p class="create__error">{{ searchError() }}</p>
+            }
+            @if (opponent()) {
+            <div class="create__opponent">
+                <span class="create__opponent-icon">👤</span>
+                <span>{{ opponent()!.username }}</span>
+                <span class="create__opponent-id">{{ opponent()!.id.slice(0, 8) }}…</span>
+            </div>
+            }
+        </section>
+
+        <section class="create__section">
+            <label class="create__label">Mode de jeu</label>
+            <div class="create__modes">
+                @for (m of modes; track m.value) {
+                <button class="create__mode-btn" [class.create__mode-btn--active]="selectedMode() === m.value"
+                    (click)="selectedMode.set(m.value)">
+                    <span class="create__mode-name">{{ m.label }}</span>
+                    <span class="create__mode-desc">{{ m.description }}</span>
+                </button>
+                }
+            </div>
+        </section>
+
+        @if (createError()) {
+        <p class="create__error">{{ createError() }}</p>
+        }
+
+        <button class="create__submit" (click)="createBattle()" [disabled]="!opponent() || creating()">
+            {{ creating() ? 'Création…' : 'Lancer le combat' }}
+        </button>
+    </div>
+</app-page-frame>
