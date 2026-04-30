@@ -64,3 +64,23 @@
 .home__account:hover {
     color: #111111;
 }
+
+.home__legal {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.home__legal-link {
+    color: #888;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.home__legal-link:hover {
+    color: #111;
+}

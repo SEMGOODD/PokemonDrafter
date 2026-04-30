@@ -48,5 +48,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/teams/team-complete/team-complete.component')
       .then(m => m.TeamCompleteComponent)
   },
+  {
+    path: 'cgu',
+    loadComponent: () => import('./features/legal/cgu.component').then(m => m.CguComponent)
+  },
+  {
+    path: 'contacts',
+    loadComponent: () => import('./features/legal/contacts.component').then(m => m.ContactsComponent)
+  },
   { path: '**', redirectTo: '' }
 ];

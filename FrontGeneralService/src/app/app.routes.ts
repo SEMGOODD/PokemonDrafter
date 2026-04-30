@@ -22,6 +22,14 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
   },
+  {
+    path: 'cgu',
+    loadComponent: () => import('./features/legal/cgu.component').then(m => m.CguComponent)
+  },
+  {
+    path: 'contacts',
+    loadComponent: () => import('./features/legal/contacts.component').then(m => m.ContactsComponent)
+  },
   { path: '', redirectTo: 'auth', pathMatch: 'full' },
   { path: '**', redirectTo: 'auth' }
 ];
