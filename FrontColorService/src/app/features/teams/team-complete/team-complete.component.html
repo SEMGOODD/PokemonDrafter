@@ -1,0 +1,47 @@
+<app-page-frame>
+    <div class="team-complete">
+        <div class="team-complete__header">
+            <a [routerLink]="['/teams', teamId]" class="team-complete__back">← Modifier l'équipe</a>
+            <h1 class="team-complete__title">Compléter l'équipe</h1>
+        </div>
+
+        @if (error()) {
+        <p class="team-complete__error">{{ error() }}</p>
+        }
+
+        @if (loading() || computing()) {
+        <p class="team-complete__state">{{ loading() ? 'Chargement…' : 'Calcul des recommandations…' }}</p>
+        } @else if (team(); as t) {
+
+        <div class="team-complete__current">
+            <p class="team-complete__label">Équipe actuelle</p>
+            <div class="team-complete__names">
+                @for (p of t.pokemons; track p.slot) {
+                <span class="team-complete__badge">{{ p.pokemonName }}</span>
+                }
+            </div>
+        </div>
+
+        <section class="team-complete__recs">
+            <h2 class="team-complete__section-title">Pokémon recommandés</h2>
+            @if (recommendations().length === 0) {
+            <p class="team-complete__state">Aucune recommandation disponible.</p>
+            } @else {
+            <div class="team-complete__grid">
+                @for (p of recommendations(); track p.id) {
+                <a [routerLink]="['/pokedex', p.id]" class="rec-card">
+                    <img [src]="p.sprite" [alt]="p.name" class="rec-card__sprite" />
+                    <span class="rec-card__name">{{ p.name }}</span>
+                    <div class="rec-card__types">
+                        @for (t of p.types; track t) {
+                        <span class="rec-card__type rec-card__type--{{ t }}">{{ t }}</span>
+                        }
+                    </div>
+                </a>
+                }
+            </div>
+            }
+        </section>
+        }
+    </div>
+</app-page-frame>

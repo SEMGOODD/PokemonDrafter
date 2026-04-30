@@ -16,7 +16,37 @@
 
             <div class="view__main">
 
-                @if (b.status === 'DRAFT_PHASE') {
+                @if (needsTeamSelection(b)) {
+                <div class="built-pick">
+                    <h2 class="draft__title">Choisir ton équipe</h2>
+                    <p class="draft__turn">Mode Construit — sélectionne l'équipe avec laquelle tu veux jouer.</p>
+                    @if (myTeams().length === 0) {
+                    <p class="view__error">Aucune équipe complète. <a routerLink="/teams">Crée une équipe</a> d'abord.
+                    </p>
+                    } @else {
+                    <div class="draft__grid" style="grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));">
+                        @for (team of myTeams(); track team.teamId) {
+                        <button class="pokemon-card"
+                            [class.pokemon-card--selected]="selectedBuiltTeamId() === team.teamId"
+                            (click)="selectedBuiltTeamId.set(team.teamId)">
+                            <span class="pokemon-card__name" style="font-size:1rem;">{{ team.name }}</span>
+                            <span class="pokemon-card__name" style="font-weight:400; font-size:0.8rem; color:#666;">
+                                {{ team.pokemons.length }}/6 Pokémon
+                            </span>
+                        </button>
+                        }
+                    </div>
+                    <button class="view__action-btn" style="margin-top:1rem;" (click)="submitBuiltTeam()"
+                        [disabled]="!selectedBuiltTeamId() || submittingTeam()">
+                        {{ submittingTeam() ? 'Envoi…' : 'Confirmer mon équipe' }}
+                    </button>
+                    }
+                    @if (actionError()) {
+                    <p class="view__error">{{ actionError() }}</p>
+                    }
+                </div>
+
+                } @else if (b.status === 'DRAFT_PHASE') {
                 <div class="draft">
                     <h2 class="draft__title">Phase de draft</h2>
                     <p class="draft__turn">
@@ -81,9 +111,8 @@
                     <p class="view__error">{{ actionError() }}</p>
                     }
                 </div>
-                }
 
-                @if (b.status === 'IN_PROGRESS') {
+                } @else if (b.status === 'IN_PROGRESS') {
                 <div class="combat">
                     <div class="combat__field">
                         <div class="combat__side combat__side--opponent">
@@ -138,9 +167,8 @@
                         Abandonner
                     </button>
                 </div>
-                }
 
-                @if (b.status === 'FINISHED') {
+                } @else if (b.status === 'FINISHED') {
                 <div class="finished">
                     @if (b.winnerId === myId()) {
                     <p class="finished__result finished__result--win">🏆 Victoire !</p>
@@ -168,7 +196,7 @@
 
             </div>
 
-            @if (b.status === 'DRAFT_PHASE' || b.status === 'IN_PROGRESS') {
+            @if (myId() && myColorCached()) {
             <div class="view__sidebar">
                 <app-chat [combatId]="b.battleId" [myColor]="myColorCached()!" [userId]="myId()!" />
             </div>

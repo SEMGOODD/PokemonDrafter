@@ -1,0 +1,61 @@
+<app-page-frame>
+    <div class="team-list">
+        <div class="team-list__header">
+            <h1 class="team-list__title">Mes équipes</h1>
+            <button class="team-list__new" (click)="createTeam()">+ Nouvelle équipe</button>
+        </div>
+
+        @if (player(); as p) {
+        <div class="team-list__player">
+            <span class="team-list__player-score">⭐ {{ p.score }} pts</span>
+            <span class="team-list__player-color team-list__player-color--{{ p.color }}">
+                Équipe {{ p.color === 'red' ? 'Rouge' : 'Bleue' }}
+            </span>
+        </div>
+        }
+
+        @if (error()) {
+        <p class="team-list__error">{{ error() }}</p>
+        }
+
+        @if (loading()) {
+        <p class="team-list__state">Chargement…</p>
+        } @else if (teams().length === 0) {
+        <p class="team-list__state">Aucune équipe pour l'instant. Crée ta première !</p>
+        } @else {
+        <div class="team-list__grid">
+            @for (team of teams(); track team.teamId) {
+            <div class="team-card">
+                <div class="team-card__header">
+                    <span class="team-card__name">{{ team.name }}</span>
+                    <span class="team-card__count">{{ pokemonCount(team) }}/6 Pokémon</span>
+                </div>
+
+                <div class="team-card__sprites">
+                    @for (p of team.pokemons; track p.slot) {
+                    <span class="team-card__pokemon-name">{{ p.pokemonName }}</span>
+                    }
+                    @if (team.pokemons.length === 0) {
+                    <span class="team-card__empty">Équipe vide</span>
+                    }
+                </div>
+
+                <div class="team-card__actions">
+                    <button class="team-card__btn" (click)="goToDetail(team.teamId)">
+                        Modifier
+                    </button>
+                    <button class="team-card__btn team-card__btn--secondary" (click)="goToComplete(team.teamId)"
+                        [disabled]="team.pokemons.length === 0">
+                        Compléter
+                    </button>
+                    <button class="team-card__btn team-card__btn--danger" (click)="deleteTeam(team.teamId)"
+                        [disabled]="deleting() === team.teamId">
+                        {{ deleting() === team.teamId ? '…' : 'Supprimer' }}
+                    </button>
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+</app-page-frame>

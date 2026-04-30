@@ -36,6 +36,8 @@ kubectl apply -f k8s/manifest.yml
 
 ## 4. Ouvrir les port-forwards (IMPORTANT — conserve les mêmes URLs navigateur)
 
+## wait a while so the pods run and after run this command:
+
 ```bash
 ./k8s/port-forward.sh
 ```

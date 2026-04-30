@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import com.example.combat.model.BuiltTeamRequest;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -56,6 +57,14 @@ public class BattleController {
 	@GetMapping("/battles/active")
 	public List<Battle> getActiveBattles(@AuthenticationPrincipal Jwt jwt) {
 		return battleService.getActiveBattlesByPlayer(jwt.getClaimAsString("preferred_username"));
+	}
+
+	@PostMapping("/battle/{battleId}/team")
+	public Battle submitBuiltTeam(@PathVariable String battleId,
+								@RequestBody BuiltTeamRequest request,
+								@AuthenticationPrincipal Jwt jwt) {
+		requireSelf(jwt, request.playerId());
+		return battleService.submitBuiltTeam(battleId, request);
 	}
 
 	@GetMapping("/battle/{battleId}/turns")

@@ -18,18 +18,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * Appender Logback générique qui publie chaque événement >= seuil sur le topic
- * Kafka des logs centralisés. Choix techniques :
- *
- *   - utilise KafkaProducer brut (pas Spring Kafka) car Logback démarre avant
- *     le contexte Spring : aucun bean n'est encore disponible.
- *   - send asynchrone, callback ignoré : un Kafka indisponible ne doit jamais
- *     casser ou ralentir le flux applicatif.
- *   - les paramètres viennent de logback-spring.xml (serviceName, topic,
- *     bootstrapServers) via setters Logback : pas d'accès direct à env ici,
- *     ce qui rend l'appender testable et réutilisable.
- */
 public class KafkaLogbackAppender extends AppenderBase<ILoggingEvent> {
 
 	private static final int LINGER_MS = 50;

@@ -14,6 +14,8 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { PageFrameComponent } from '../../../shared/ui/page-frame/page-frame.component';
 import { ActionType, Battle, BattlePokemon } from '../../../shared/types/combat.types';
 import { ChatComponent } from '../chat/chat.component';
+import { TeamApiService } from '../../../core/api/team-api.service';
+import { TeamResponse } from '../../../shared/types/team.types';
 
 const DRAFT_ORDER: [number, number][] = [
   [0, 1], [1, 2], [0, 1], [1, 1], [0, 1],
@@ -64,6 +66,10 @@ export class BattleViewComponent implements OnInit, OnDestroy {
   readonly recommendations = signal<BattlePokemon[]>([]);
   readonly myId = signal<string | null>(null);
   readonly myColorCached = signal<'red' | 'blue' | null>(null);
+  private readonly teamApi = inject(TeamApiService);
+  readonly myTeams = signal<TeamResponse[]>([]);
+  readonly selectedBuiltTeamId = signal<string | null>(null);
+  readonly submittingTeam = signal(false);
 
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private battleId = '';
@@ -73,6 +79,12 @@ export class BattleViewComponent implements OnInit, OnDestroy {
     this.myId.set(this.auth.getPlayerId());
     this.fetchBattle();
     this.pollTimer = setInterval(() => this.fetchBattle(), POLL_INTERVAL_MS);
+    this.teamApi.getMyTeams().subscribe({
+      next: teams => {
+        this.myTeams.set(teams.filter(t => t.pokemons.length === 6));
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -167,6 +179,39 @@ export class BattleViewComponent implements OnInit, OnDestroy {
 
   isRecommended(id: number): boolean {
     return this.recommendations().some(p => p.id === id);
+  }
+
+  needsTeamSelection(b: Battle): boolean {
+    return b.mode === 'BUILT' &&
+      b.status === 'DRAFT_PHASE' &&
+      this.myTeam(b).length === 0;
+  }
+
+  submitBuiltTeam(): void {
+    const teamId = this.selectedBuiltTeamId();
+    const playerId = this.myId();
+    if (!teamId || !playerId) return;
+
+    const team = this.myTeams().find(t => t.teamId === teamId);
+    if (!team) return;
+
+    this.submittingTeam.set(true);
+    const pokemonIds = team.pokemons
+      .sort((a, b) => a.slot - b.slot)
+      .map(p => p.pokemonId);
+
+    this.api.submitBuiltTeam(this.battleId, { playerId, pokemonIds }).subscribe({
+      next: updated => {
+        this.battle.set(updated);
+        this.submittingTeam.set(false);
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        this.actionError.set(err.error?.error ?? 'Erreur lors de la soumission.');
+        this.submittingTeam.set(false);
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   private recommendationScore(candidate: BattlePokemon, team: BattlePokemon[]): number {

@@ -1,6 +1,4 @@
-# ============================================================
-#  CONFIGMAPS
-# ============================================================
+# CONFIGMAPS
 
 apiVersion: v1
 kind: ConfigMap
@@ -50,9 +48,7 @@ data:
 
 
 
-# ============================================================
-#  PERSISTENT VOLUME CLAIMS
-# ============================================================
+# PERSISTENT VOLUME CLAIMS
 
 ---
 apiVersion: v1
@@ -94,9 +90,7 @@ spec:
       storage: 256Mi
 
 
-# ============================================================
-#  INGRESS
-# ============================================================
+# INGRESS
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -156,9 +150,7 @@ spec:
               number: 8000
 
 
-# ============================================================
-#  KAFKA
-# ============================================================
+# KAFKA
 
 ---
 apiVersion: v1
@@ -245,9 +237,7 @@ spec:
           persistentVolumeClaim:
             claimName: kafka-pvc
 
-# ============================================================
-#  POSTGRESQL
-# ============================================================
+# POSTGRESQL
 
 ---
 apiVersion: v1
@@ -302,9 +292,7 @@ spec:
           configMap:
             name: postgres-init-sql
 
-# ============================================================
-#  REDIS  (Cache)
-# ============================================================
+# REDIS (Cache)
 
 ---
 apiVersion: v1
@@ -349,9 +337,7 @@ spec:
           persistentVolumeClaim:
             claimName: redis-pvc
 
-# ============================================================
-#  KEYCLOAK  (Identity Provider)
-# ============================================================
+# KEYCLOAK (Identity Provider)
 
 ---
 apiVersion: v1
@@ -411,9 +397,7 @@ spec:
           configMap:
             name: keycloak-realm
 
-# ============================================================
-#  API GATEWAY  (Spring Boot)
-# ============================================================
+# API GATEWAY
 
 ---
 apiVersion: v1
@@ -479,9 +463,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
 
-# ============================================================
-#  POKEMON SERVICE  (Java Spring Boot + Redis Cache)
-# ============================================================
+# POKEMON SERVICE
 
 ---
 apiVersion: v1
@@ -535,9 +517,7 @@ spec:
             initialDelaySeconds: 25
             periodSeconds: 10
 
-# ============================================================
-#  COMBAT SERVICE  (Java Spring Boot)
-# ============================================================
+# COMBAT SERVICE
 
 ---
 apiVersion: v1
@@ -599,9 +579,7 @@ spec:
             initialDelaySeconds: 25
             periodSeconds: 10
 
-# ============================================================
-#  CHAT SERVICE  (Java Spring Boot)
-# ============================================================
+# CHAT SERVICE
 
 ---
 apiVersion: v1
@@ -634,6 +612,10 @@ spec:
       labels:
         app: chat-service
     spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z kafka 9092; do echo waiting for kafka; sleep 3; done']
       containers:
         - name: chat-service
           image: chat-service:latest
@@ -647,12 +629,17 @@ spec:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 25
+            initialDelaySeconds: 15
             periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
 
-# ============================================================
-#  LOGS SERVICE  (Java Spring Boot)
-# ============================================================
+# LOGS SERVICE
 
 ---
 apiVersion: v1
@@ -708,9 +695,7 @@ spec:
             initialDelaySeconds: 25
             periodSeconds: 10
 
-# ============================================================
-#  FRONTEND GENERAL  (Angular + Nginx)
-# ============================================================
+# FRONTEND GENERAL
 
 ---
 apiVersion: v1
@@ -765,9 +750,7 @@ spec:
             - name: CHAT_WS_URL
               value: "ws://localhost:8006"
 
-# ============================================================
-#  FRONTEND RED  (Angular + Nginx)
-# ============================================================
+# FRONTEND RED
 
 ---
 apiVersion: v1
@@ -822,9 +805,7 @@ spec:
             - name: CHAT_WS_URL
               value: "ws://localhost:8006"
 
-# ============================================================
-#  FRONTEND BLUE  (Angular + Nginx)
-# ============================================================
+# FRONTEND BLUE
 
 ---
 apiVersion: v1

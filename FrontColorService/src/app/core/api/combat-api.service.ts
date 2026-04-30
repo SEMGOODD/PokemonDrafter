@@ -37,6 +37,10 @@ export class CombatApiService {
     return this.http.get<Battle[]>(`${this.base()}/battles/active`);
   }
 
+  submitBuiltTeam(battleId: string, request: { playerId: string; pokemonIds: number[] }): Observable<Battle> {
+    return this.http.post<Battle>(`${this.base()}/battle/${battleId}/team`, request);
+  }
+
   getTurns(battleId: string): Observable<TurnResult[]> {
     return this.http.get<TurnResult[]>(`${this.base()}/battle/${battleId}/turns`);
   }

@@ -5,7 +5,9 @@
 
         <div class="home__actions">
             <a routerLink="/pokedex" class="home__cta">Ouvrir le Pokédex</a>
-
+            @if (loggedIn()) {
+            <a routerLink="/teams" class="home__cta home__cta--secondary">Mes équipes</a>
+            }
             @if (loggedIn()) {
             <a routerLink="/combat" class="home__cta home__cta--secondary">Mes combats</a>
             } @else {
