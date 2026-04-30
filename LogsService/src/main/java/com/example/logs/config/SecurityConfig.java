@@ -19,11 +19,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * La gateway exige déjà le rôle admin sur /api/logs/**, mais on revérifie ici
- * en défense en profondeur : le service refuse tout JWT qui n'a pas le rôle
- * admin extrait du claim Keycloak realm_access.roles.
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {

@@ -12,11 +12,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 
-/**
- * Convertit une payload Kafka brute en LogEntry persistable. Les payloads
- * peuvent être au format complet (appender Logback) ou minimaliste
- * (BattleEventProducer historique : {eventType, battleId, ...}).
- */
 @Service
 public class LogIngestService {
 
