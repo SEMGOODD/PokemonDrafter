@@ -94,13 +94,14 @@ graph TB
 
 ### Prérequis
 
-- Docker Desktop.
-- Optionnel : `kubectl` + minikube pour la voie Kubernetes.
+- Docker.
+-`kubectl` + minikube pour la voie Kubernetes.
 
 ### Docker Compose
 
 ```bash
-docker compose up --build
+docker compose build
+docker compose up -d
 ```
 
 Tous les services démarrent ; attendre qu'ils soient `healthy` (~1-2 min, Keycloak est le plus long).
