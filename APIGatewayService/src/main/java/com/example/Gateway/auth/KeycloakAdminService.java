@@ -40,8 +40,7 @@ public class KeycloakAdminService {
 			WebClient keycloakWebClient,
 			@Value("${keycloak.realm}") String realm,
 			@Value("${keycloak.admin.username}") String adminUser,
-			@Value("${keycloak.admin.password}") String adminPassword
-	) {
+			@Value("${keycloak.admin.password}") String adminPassword) {
 		this.webClient = keycloakWebClient;
 		this.realm = realm;
 		this.adminUser = adminUser;
@@ -72,17 +71,18 @@ public class KeycloakAdminService {
 								.build(realm))
 						.headers(h -> h.setBearerAuth(token))
 						.retrieve()
-						.bodyToMono(new org.springframework.core.ParameterizedTypeReference<List<Map<String, Object>>>() {
-						})
+						.bodyToMono(
+								new org.springframework.core.ParameterizedTypeReference<List<Map<String, Object>>>() {
+								})
 						.flatMap(users -> {
 							if (users.isEmpty()) {
-								return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+								return Mono.error(
+										new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
 							}
 							Map<String, Object> user = users.get(0);
 							return Mono.just(Map.of(
 									"id", (String) user.get("id"),
-									"username", (String) user.get("username")
-							));
+									"username", (String) user.get("username")));
 						})
 						.onErrorMap(WebClientResponseException.class, KeycloakAdminService::toResponseStatusException));
 	}
@@ -112,22 +112,22 @@ public class KeycloakAdminService {
 				"credentials", List.of(Map.of(
 						"type", "password",
 						"value", request.password(),
-						"temporary", false
-				))
-		);
+						"temporary", false)));
 		return webClient.post()
 				.uri(USERS_PATH_TEMPLATE, realm)
 				.headers(h -> h.setBearerAuth(adminToken))
 				.contentType(MediaType.APPLICATION_JSON)
 				.bodyValue(payload)
 				.retrieve()
-				.onStatus(HttpStatus.CONFLICT::equals, response ->
-						Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Utilisateur deja existant")))
+				.onStatus(HttpStatus.CONFLICT::equals,
+						response -> Mono
+								.error(new ResponseStatusException(HttpStatus.CONFLICT, "Utilisateur deja existant")))
 				.toBodilessEntity()
 				.map(entity -> {
 					String location = entity.getHeaders().getFirst(LOCATION_HEADER);
 					if (location == null) {
-						throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Reponse Keycloak sans header Location");
+						throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+								"Reponse Keycloak sans header Location");
 					}
 					return location.substring(location.lastIndexOf('/') + 1);
 				})
@@ -146,6 +146,49 @@ public class KeycloakAdminService {
 
 	private Mono<Void> assignRealmRole(String userId, Map<String, Object> role, String adminToken) {
 		return webClient.post()
+				.uri(USER_REALM_ROLES_PATH_TEMPLATE, realm, userId)
+				.headers(h -> h.setBearerAuth(adminToken))
+				.contentType(MediaType.APPLICATION_JSON)
+				.bodyValue(List.of(role))
+				.retrieve()
+				.toBodilessEntity()
+				.then()
+				.onErrorMap(WebClientResponseException.class, KeycloakAdminService::toResponseStatusException);
+	}
+
+	public Mono<Void> changeUserColor(String username, String newColor) {
+		String roleToAdd = COLOR_RED.equals(newColor) ? ROLE_RED_PLAYER : ROLE_BLUE_PLAYER;
+		String roleToRemove = COLOR_RED.equals(newColor) ? ROLE_BLUE_PLAYER : ROLE_RED_PLAYER;
+
+		return getAdminToken()
+				.flatMap(token -> findUserIdByUsername(username, token)
+						.flatMap(userId -> getRealmRole(roleToRemove, token)
+								.flatMap(oldRole -> removeRealmRole(userId, oldRole, token))
+								.then(getRealmRole(roleToAdd, token))
+								.flatMap(newRole -> assignRealmRole(userId, newRole, token))));
+	}
+
+	private Mono<String> findUserIdByUsername(String username, String adminToken) {
+		return webClient.get()
+				.uri(builder -> builder.path(USERS_PATH_TEMPLATE)
+						.queryParam("username", username)
+						.queryParam("exact", true)
+						.build(realm))
+				.headers(h -> h.setBearerAuth(adminToken))
+				.retrieve()
+				.bodyToMono(new org.springframework.core.ParameterizedTypeReference<List<Map<String, Object>>>() {
+				})
+				.flatMap(users -> {
+					if (users.isEmpty()) {
+						return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+					}
+					return Mono.just((String) users.get(0).get("id"));
+				})
+				.onErrorMap(WebClientResponseException.class, KeycloakAdminService::toResponseStatusException);
+	}
+
+	private Mono<Void> removeRealmRole(String userId, Map<String, Object> role, String adminToken) {
+		return webClient.method(org.springframework.http.HttpMethod.DELETE)
 				.uri(USER_REALM_ROLES_PATH_TEMPLATE, realm, userId)
 				.headers(h -> h.setBearerAuth(adminToken))
 				.contentType(MediaType.APPLICATION_JSON)

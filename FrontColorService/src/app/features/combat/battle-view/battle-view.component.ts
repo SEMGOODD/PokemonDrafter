@@ -7,7 +7,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CombatApiService } from '../../../core/api/combat-api.service';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -70,6 +70,9 @@ export class BattleViewComponent implements OnInit, OnDestroy {
   readonly myTeams = signal<TeamResponse[]>([]);
   readonly selectedBuiltTeamId = signal<string | null>(null);
   readonly submittingTeam = signal(false);
+  readonly countdown = signal<number>(90);
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly router = inject(Router);
 
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private battleId = '';
@@ -89,12 +92,19 @@ export class BattleViewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
   }
 
   private fetchBattle(): void {
     this.api.getBattle(this.battleId).subscribe({
       next: b => {
         this.battle.set(b);
+        if (b.status === 'IN_PROGRESS' && b.turnDeadline) {
+          this.startCountdown(b.turnDeadline);
+        } else if (b.status !== 'IN_PROGRESS' && this.countdownTimer) {
+          clearInterval(this.countdownTimer);
+          this.countdownTimer = null;
+        }
         if (!this.myColorCached()) {
           this.myColorCached.set(this.myColor(b));
         }
@@ -214,6 +224,21 @@ export class BattleViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  private startCountdown(deadline: string): void {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((new Date(deadline).getTime() - Date.now()) / 1000));
+      this.countdown.set(remaining);
+      this.cdr.markForCheck();
+      if (remaining === 0 && this.countdownTimer) {
+        clearInterval(this.countdownTimer);
+        this.countdownTimer = null;
+      }
+    };
+    tick();
+    this.countdownTimer = setInterval(tick, 1000);
+  }
+
   private recommendationScore(candidate: BattlePokemon, team: BattlePokemon[]): number {
     const teamTypeSet = new Set(team.flatMap(p => p.types));
     const candidateTypes = candidate.types;
@@ -310,5 +335,24 @@ export class BattleViewComponent implements OnInit, OnDestroy {
       FINISHED: 'Terminé'
     };
     return labels[status] ?? status;
+  }
+  countdownColor(): string {
+    const s = this.countdown();
+    if (s <= 10) return '#dc2626';
+    if (s <= 30) return '#f59e0b';
+    return '#16a34a';
+  }
+
+  onNavAway(event: Event, b: Battle): void {
+    if (b.status === 'IN_PROGRESS' || b.status === 'DRAFT_PHASE') {
+      event.preventDefault();
+      if (confirm('Quitter la partie ? Tu devras déclarer forfait.')) {
+        const playerId = this.myId();
+        if (!playerId) return;
+        this.api.forfeit(this.battleId, { playerId }).subscribe({
+          next: () => this.router.navigate(['/']),
+        });
+      }
+    }
   }
 }

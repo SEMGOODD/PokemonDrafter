@@ -17,7 +17,7 @@ export class PlayerApiService {
         return this.http.get<PlayerResponse>(`${this.base()}/me`);
     }
 
-    changeColor(request: ColorChangeRequest): Observable<PlayerResponse> {
-        return this.http.put<PlayerResponse>(`${this.base()}/me/color`, request);
+    changeColor(request: ColorChangeRequest): Observable<void> {
+        return this.http.put<void>(`${this.env.GATEWAY_URL}/api/users/me/color`, request);
     }
 }
