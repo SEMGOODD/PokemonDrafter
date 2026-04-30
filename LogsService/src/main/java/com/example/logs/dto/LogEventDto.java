@@ -9,13 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Représentation typée d'un événement Kafka du topic logs-service.
- *
- * Les champs sont tous optionnels : le consumer applique des défauts pour
- * accepter le format historique (ex. CombatService publiant {eventType, battleId})
- * en plus du format complet de l'appender Logback Kafka.
- */
 @Getter
 @Setter
 @NoArgsConstructor

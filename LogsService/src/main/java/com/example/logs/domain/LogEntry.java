@@ -48,10 +48,6 @@ public class LogEntry {
 	@Column(columnDefinition = "TEXT")
 	private String message;
 
-	/**
-	 * Stocke la payload Kafka brute en JSON afin que les futurs champs
-	 * (battleId, userId, eventType, etc.) restent consultables sans migration BD.
-	 */
 	@Column(columnDefinition = "TEXT")
 	private String context;
 }

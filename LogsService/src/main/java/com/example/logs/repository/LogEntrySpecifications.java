@@ -7,11 +7,6 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Specifications JPA composables pour LogQueryFilter. Chaque critère est
- * appliqué uniquement s'il est non vide ; ajouter un nouveau critère consiste
- * simplement à étendre la liste retournée par fromFilter().
- */
 public final class LogEntrySpecifications {
 
 	private static final String FIELD_SERVICE = "service";

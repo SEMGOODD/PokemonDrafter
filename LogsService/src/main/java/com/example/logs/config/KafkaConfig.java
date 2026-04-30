@@ -15,7 +15,7 @@ import java.util.Map;
 @Configuration
 public class KafkaConfig {
 
-    @Value("${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}") // same pattern as CombatService
+    @Value("${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}")
     private String bootstrapServers;
 
     @Bean
