@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.kafka_producer import KafkaProducerClient
+from app.kafka_consumer import KafkaChatConsumer
 from app.room_manager import RoomManager
 
 logging.basicConfig(level=logging.INFO)
@@ -19,11 +20,21 @@ kafka_producer = KafkaProducerClient()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global kafka_consumer
+
     await kafka_producer.start()
     logger.info("Kafka producer started")
+
+    kafka_consumer = KafkaChatConsumer(room_manager)
+    await kafka_consumer.start()
+    logger.info("Kafka consumer started")
+
     yield
+
+    if kafka_consumer:
+        await kafka_consumer.stop()
     await kafka_producer.stop()
-    logger.info("Kafka producer stopped")
+    logger.info("Kafka producer and consumer stopped")
 
 
 app = FastAPI(

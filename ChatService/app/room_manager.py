@@ -73,6 +73,20 @@ class RoomManager:
             del self._rooms[combat_id]
             logger.info(f"[{combat_id}] Room closed (both players gone)")
 
+    async def broadcast(self, combat_id: str, payload: dict) -> None:
+        """Send a message to ALL connected players in the room."""
+        room = self._rooms.get(combat_id)
+        if room is None:
+            return
+        for color in ("red", "blue"):
+            ws = room.get_socket(color)
+            if ws is not None:
+                try:
+                    await ws.send_json(payload)
+                except Exception as e:
+                    logger.warning(f"[{combat_id}] Failed to broadcast to {color}: {e}")
+                    room.set_socket(color, None)
+
     async def send_to_opponent(self, combat_id: str, sender_color: str, payload: dict) -> None:
         """Forward a message to the player of the opposite color."""
         room = self._rooms.get(combat_id)

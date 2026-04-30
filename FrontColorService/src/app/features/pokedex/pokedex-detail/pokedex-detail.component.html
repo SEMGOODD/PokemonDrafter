@@ -64,6 +64,57 @@
         <p class="detail__description-text">{{ p.description }}</p>
       </section>
       }
+
+      @if (myTeams().length > 0) {
+      <section class="detail__add-team">
+        <h2 class="detail__section-title">Ajouter à une équipe</h2>
+
+        @if (!showAddPanel()) {
+        <button class="detail__add-btn" (click)="showAddPanel.set(true)">
+          + Ajouter {{ p.name }} à une équipe
+        </button>
+        } @else {
+        <div class="detail__add-form">
+          <div class="detail__add-row">
+            <label class="detail__add-label">Équipe</label>
+            <select class="detail__add-select" [value]="selectedTeamId()"
+              (change)="selectedTeamId.set($any($event.target).value); selectedSlot.set(availableSlots()[0] ?? 1)">
+              <option value="">Choisir une équipe…</option>
+              @for (team of myTeams(); track team.teamId) {
+              <option [value]="team.teamId">{{ team.name }} ({{ team.pokemons.length }}/6)</option>
+              }
+            </select>
+          </div>
+
+          @if (selectedTeamId()) {
+          <div class="detail__add-row">
+            <label class="detail__add-label">Slot</label>
+            <div class="detail__slot-btns">
+              @for (s of availableSlots(); track s) {
+              <button class="detail__slot-btn" [class.detail__slot-btn--active]="selectedSlot() === s"
+                (click)="selectedSlot.set(s)">
+                {{ s }}
+              </button>
+              }
+            </div>
+          </div>
+
+          <button class="detail__add-confirm" (click)="addToTeam()" [disabled]="adding() || !selectedSlot()">
+            {{ adding() ? 'Ajout…' : 'Confirmer' }}
+          </button>
+          }
+
+          @if (addSuccess()) {
+          <p class="detail__add-success">✓ {{ addSuccess() }}</p>
+          }
+          @if (addError()) {
+          <p class="detail__add-error">{{ addError() }}</p>
+          }
+        </div>
+        }
+      </section>
+      }
+
     </article>
     }
   </section>
