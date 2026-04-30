@@ -1,7 +1,11 @@
 <app-page-frame>
     <div class="view">
         <div class="view__header">
-            <a routerLink="/combat" class="view__back">← Mes combats</a>
+            <div class="view__nav">
+                <a routerLink="/combat" class="view__back" (click)="battle() && onNavAway($event, battle()!)">← Mes
+                    combats</a>
+                <a routerLink="/" class="view__back" (click)="battle() && onNavAway($event, battle()!)"> Accueil</a>
+            </div>
             @if (battle()) {
             <span class="view__status">{{ statusLabel(battle()!.status) }}</span>
             }
@@ -115,6 +119,9 @@
                 } @else if (b.status === 'IN_PROGRESS') {
                 <div class="combat">
                     <div class="combat__field">
+                        <div class="combat__timer" [style.color]="countdownColor()">
+                            ⏱ {{ countdown() }}s
+                        </div>
                         <div class="combat__side combat__side--opponent">
                             <p class="combat__label">Adversaire</p>
                             @if (opponentActive(b); as opp) {

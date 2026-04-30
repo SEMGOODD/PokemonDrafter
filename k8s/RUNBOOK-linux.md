@@ -42,13 +42,14 @@ kubectl apply -f k8s/manifest.yml
 ./k8s/port-forward.sh
 ```
 
-Ce script reproduit le mapping de ports du `docker-compose.yml` (4200, 4201, 4202, 8000, 8080, 8006). Sans ça, les URLs hardcodées dans le frontend ne joindront pas les services.
-
 ## 5. Surveiller les pods
 
 ```bash
 kubectl get pods -n pokemon-drafter -w
 ```
+
+
+Ce script reproduit le mapping de ports du `docker-compose.yml` (4200, 4201, 4202, 8000, 8080, 8006). Sans ça, les URLs hardcodées dans le frontend ne joindront pas les services.
 
 ## 6. À la fin de la session — libérer le shell de minikube
 

@@ -378,3 +378,18 @@
     color: #dc2626;
     font-weight: 600;
 }
+
+.combat__timer {
+    font-size: 2rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-variant-numeric: tabular-nums;
+    transition: color 300ms;
+}
+
+.view__nav {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
