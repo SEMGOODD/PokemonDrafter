@@ -1,0 +1,141 @@
+.team-complete {
+    max-width: 38rem;
+    margin: 2rem auto 0;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.team-complete__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.team-complete__back {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.team-complete__back:hover {
+    color: #111;
+}
+
+.team-complete__title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.team-complete__error {
+    color: #dc2626;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.team-complete__state {
+    color: #888;
+}
+
+.team-complete__current {
+    padding: 0.75rem 1rem;
+    background: #f8f8f8;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.team-complete__label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin: 0;
+}
+
+.team-complete__names {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.team-complete__badge {
+    padding: 0.15rem 0.5rem;
+    background: #e5e5e5;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+}
+
+.team-complete__recs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.team-complete__section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin: 0;
+}
+
+.team-complete__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 0.75rem;
+}
+
+.rec-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.5rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 120ms;
+}
+
+.rec-card:hover {
+    border-color: #111;
+}
+
+.rec-card__sprite {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}
+
+.rec-card__name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.rec-card__types {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.rec-card__type {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    background: #e5e5e5;
+    text-transform: capitalize;
+}
+
+.team-complete__section-title {
+    margin-bottom: 0.25rem;
+}

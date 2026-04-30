@@ -7,6 +7,7 @@ import com.example.combat.model.ActionType;
 import com.example.combat.model.Battle;
 import com.example.combat.model.BattlePokemon;
 import com.example.combat.model.BattleStatus;
+import com.example.combat.model.BuiltTeamRequest;
 import com.example.combat.model.CreateBattleRequest;
 import com.example.combat.model.DraftPickRequest;
 import com.example.combat.model.ForfeitRequest;
@@ -40,6 +41,7 @@ public class BattleService {
 	private final PokemonServiceClient pokemonClient;
 	private final CombatResolverService resolver;
 	private final BattleEventProducer producer;
+	private final PlayerService playerService;
 	private final BattleRepository battleRepository;
 	private final ObjectMapper objectMapper;
 	private final Random random = new Random();
@@ -48,12 +50,23 @@ public class BattleService {
 			CombatResolverService resolver,
 			BattleEventProducer producer,
 			BattleRepository battleRepository,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper,
+			PlayerService playerService) {
 		this.pokemonClient = pokemonClient;
 		this.resolver = resolver;
 		this.producer = producer;
 		this.battleRepository = battleRepository;
 		this.objectMapper = objectMapper;
+		this.playerService = playerService;
+	}
+
+	private void updatePlayerScores(Battle battle) {
+		if (battle.getWinnerId() == null)
+			return;
+		String loserId = battle.getWinnerId().equals(battle.getRedPlayerId())
+				? battle.getBluePlayerId()
+				: battle.getRedPlayerId();
+		playerService.updateScores(battle.getWinnerId(), loserId);
 	}
 
 	public Battle createBattle(CreateBattleRequest request) {
@@ -66,9 +79,13 @@ public class BattleService {
 				battle.setDraftPool(new ArrayList<>(pool));
 			}
 			case BUILT -> {
-				battle.setRedTeam(fetchTeam(request.redTeam()));
-				battle.setBlueTeam(fetchTeam(request.blueTeam()));
-				startBattle(battle, false);
+				if (request.redTeam() != null && !request.redTeam().isEmpty()) {
+					battle.setRedTeam(fetchTeam(request.redTeam()));
+				}
+				if (request.blueTeam() != null && !request.blueTeam().isEmpty()) {
+					battle.setBlueTeam(fetchTeam(request.blueTeam()));
+				}
+				tryStartBuilt(battle);
 			}
 			case RANDOM -> {
 				List<BattlePokemon> pool = randomPokemonPool(POKEMON_POOL_SIZE);
@@ -167,6 +184,32 @@ public class BattleService {
 		return battle;
 	}
 
+	public Battle submitBuiltTeam(String battleId, BuiltTeamRequest request) {
+		Battle battle = getBattle(battleId);
+		synchronized (battle) {
+			if (battle.getStatus() != BattleStatus.DRAFT_PHASE) {
+				throw new IllegalStateException("Battle already started");
+			}
+			List<BattlePokemon> team = fetchTeam(request.pokemonIds());
+			if (battle.getRedPlayerId().equals(request.playerId())) {
+				battle.setRedTeam(team);
+			} else if (battle.getBluePlayerId().equals(request.playerId())) {
+				battle.setBlueTeam(team);
+			} else {
+				throw new IllegalArgumentException("Unknown player");
+			}
+			tryStartBuilt(battle);
+			persist(battle);
+		}
+		return battle;
+	}
+
+	private void tryStartBuilt(Battle battle) {
+		if (!battle.getRedTeam().isEmpty() && !battle.getBlueTeam().isEmpty()) {
+			startBattle(battle, false);
+		}
+	}
+
 	public Battle submitAction(String battleId, PlayerActionRequest request) {
 		Battle battle = getBattle(battleId);
 		synchronized (battle) {
@@ -218,6 +261,7 @@ public class BattleService {
 		}
 		producer.publishForfeit(battle, request.playerId());
 		producer.publishBattleEnded(battle);
+		updatePlayerScores(battle);
 		return battle;
 	}
 
@@ -251,6 +295,7 @@ public class BattleService {
 				}
 				persist(battle);
 				producer.publishBattleEnded(battle);
+				updatePlayerScores(battle);
 			}
 		});
 	}
@@ -274,6 +319,7 @@ public class BattleService {
 
 		if (battle.getStatus() == BattleStatus.FINISHED) {
 			producer.publishBattleEnded(battle);
+			updatePlayerScores(battle);
 		} else {
 			battle.setTurnNumber(battle.getTurnNumber() + 1);
 			battle.setRedAction(null);

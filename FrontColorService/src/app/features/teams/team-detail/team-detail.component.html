@@ -1,0 +1,89 @@
+<app-page-frame>
+    <div class="team-detail">
+        <div class="team-detail__header">
+            <a routerLink="/teams" class="team-detail__back">← Mes équipes</a>
+            @if (team(); as t) {
+            <h1 class="team-detail__title">{{ t.name }}</h1>
+            <button class="team-detail__rename" (click)="renameTeam()" [disabled]="saving()">
+                Renommer
+            </button>
+            }
+        </div>
+
+        @if (error()) {
+        <p class="team-detail__error">{{ error() }}</p>
+        }
+
+        @if (loading()) {
+        <p class="team-detail__state">Chargement…</p>
+        } @else if (team(); as t) {
+
+        <section class="team-detail__section">
+            <h2 class="team-detail__section-title">Pokémon dans l'équipe ({{ t.pokemons.length }}/6)</h2>
+            @if (t.pokemons.length === 0) {
+            <p class="team-detail__empty">Aucun Pokémon — utilise la recherche ci-dessous pour en ajouter.</p>
+            } @else {
+            <div class="team-detail__slots">
+                @for (slot of availableSlots; track slot) {
+                <div class="slot-card" [class.slot-card--empty]="!takenSlots().includes(slot)">
+                    @if (t.pokemons | slotPokemon: slot; as p) {
+                    <span class="slot-card__name">{{ p.pokemonName }}</span>
+                    <button class="slot-card__remove" (click)="removePokemon(p)" [disabled]="saving()">✕</button>
+                    } @else {
+                    <span class="slot-card__empty-label">Slot {{ slot }}</span>
+                    }
+                </div>
+                }
+            </div>
+            }
+        </section>
+
+        @if (!isFull()) {
+        <section class="team-detail__section">
+            <h2 class="team-detail__section-title">Ajouter un Pokémon</h2>
+
+            <div class="team-detail__add-form">
+                <div class="team-detail__slot-select">
+                    <label class="team-detail__label">Slot</label>
+                    <div class="team-detail__slot-btns">
+                        @for (s of availableSlots; track s) {
+                        <button class="slot-btn" [class.slot-btn--active]="selectedSlot() === s"
+                            [class.slot-btn--taken]="takenSlots().includes(s)" (click)="selectedSlot.set(s)"
+                            [disabled]="takenSlots().includes(s)">
+                            {{ s }}
+                        </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="team-detail__search-row">
+                    <input class="team-detail__input" type="text" placeholder="Chercher un Pokémon…"
+                        [(ngModel)]="searchName" (keydown.enter)="searchPokemon()" />
+                    <button class="team-detail__btn" (click)="searchPokemon()" [disabled]="searching()">
+                        {{ searching() ? '…' : 'Chercher' }}
+                    </button>
+                </div>
+            </div>
+
+            @if (searchResults().length > 0) {
+            <div class="team-detail__results">
+                @for (p of searchResults(); track p.id) {
+                <button class="result-card" (click)="addPokemon(p)" [disabled]="saving()">
+                    <img [src]="p.sprite" [alt]="p.name" class="result-card__sprite" />
+                    <div class="result-card__info">
+                        <span class="result-card__name">{{ p.name }}</span>
+                        <div class="result-card__types">
+                            @for (t of p.types; track t) {
+                            <span class="result-card__type result-card__type--{{ t }}">{{ t }}</span>
+                            }
+                        </div>
+                    </div>
+                </button>
+                }
+            </div>
+            }
+        </section>
+        }
+        }
+    </div>
+</app-page-frame>

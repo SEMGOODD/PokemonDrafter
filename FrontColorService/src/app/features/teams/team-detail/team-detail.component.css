@@ -1,0 +1,282 @@
+.team-detail {
+    max-width: 38rem;
+    margin: 2rem auto 0;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.team-detail__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.team-detail__back {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.team-detail__back:hover {
+    color: #111;
+}
+
+.team-detail__title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+    flex: 1;
+}
+
+.team-detail__rename {
+    padding: 0.35rem 0.9rem;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.team-detail__error {
+    color: #dc2626;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.team-detail__state {
+    color: #888;
+}
+
+.team-detail__empty {
+    color: #aaa;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.team-detail__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.team-detail__section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin: 0;
+}
+
+.team-detail__slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.slot-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    background: #fff;
+    min-height: 2.5rem;
+}
+
+.slot-card--empty {
+    background: #fafafa;
+    border-style: dashed;
+}
+
+.slot-card__name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.slot-card__empty-label {
+    font-size: 0.8rem;
+    color: #bbb;
+}
+
+.slot-card__remove {
+    background: none;
+    border: none;
+    color: #dc2626;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    line-height: 1;
+}
+
+.team-detail__add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.team-detail__label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #444;
+}
+
+.team-detail__slot-btns {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+}
+
+.slot-btn {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    background: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.slot-btn--active {
+    border-color: #111;
+    background: #111;
+    color: #fff;
+}
+
+.slot-btn--taken {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.team-detail__search-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.team-detail__input {
+    flex: 1;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.team-detail__btn {
+    padding: 0.625rem 1rem;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.team-detail__results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.result-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.result-card:hover:not(:disabled) {
+    border-color: #111;
+}
+
+.result-card__sprite {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+.result-card__name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.team-detail__results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.result-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.5rem;
+    border: 2px solid #e5e5e5;
+    border-radius: 0.75rem;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 120ms;
+}
+
+.result-card:hover:not(:disabled) {
+    border-color: #111;
+}
+
+.result-card:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.result-card__sprite {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.result-card__info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.result-card__name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.result-card__types {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.result-card__type {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    background: #e5e5e5;
+    text-transform: capitalize;
+    font-weight: 600;
+}

@@ -14,7 +14,6 @@
                     {{ searching() ? '…' : 'Chercher' }}
                 </button>
             </div>
-
             @if (searchError()) {
             <p class="create__error">{{ searchError() }}</p>
             }
@@ -40,11 +39,31 @@
             </div>
         </section>
 
+        @if (selectedMode() === 'BUILT') {
+        <section class="create__section">
+            <label class="create__label">Mon équipe</label>
+            @if (myTeams().length === 0) {
+            <p class="create__error">Aucune équipe complète (6 Pokémon). <a routerLink="/teams">Créer une équipe</a></p>
+            } @else {
+            <div class="create__modes">
+                @for (team of myTeams(); track team.teamId) {
+                <button class="create__mode-btn" [class.create__mode-btn--active]="selectedTeamId() === team.teamId"
+                    (click)="selectedTeamId.set(team.teamId)">
+                    <span class="create__mode-name">{{ team.name }}</span>
+                    <span class="create__mode-desc">{{ team.pokemons | teamNames }}</span>
+                </button>
+                }
+            </div>
+            }
+        </section>
+        }
+
         @if (createError()) {
         <p class="create__error">{{ createError() }}</p>
         }
 
-        <button class="create__submit" (click)="createBattle()" [disabled]="!opponent() || creating()">
+        <button class="create__submit" (click)="createBattle()"
+            [disabled]="!opponent() || creating() || (selectedMode() === 'BUILT' && !selectedTeamId())">
             {{ creating() ? 'Création…' : 'Lancer le combat' }}
         </button>
     </div>

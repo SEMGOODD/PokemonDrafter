@@ -28,6 +28,20 @@ spring:
           filters:
             - StripPrefix=1
 
+        - id: players-route
+          uri: ${COMBAT_SERVICE_URL:http://combat-service:8000}
+          predicates:
+            - Path=/api/players/**
+          filters:
+            - StripPrefix=1
+
+        - id: teams-route
+          uri: ${COMBAT_SERVICE_URL:http://combat-service:8000}
+          predicates:
+            - Path=/api/teams/**
+          filters:
+            - StripPrefix=1
+
         - id: chat-route
           uri: ${CHAT_SERVICE_URL:http://chat-service:8000}
           predicates:

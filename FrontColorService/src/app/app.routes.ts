@@ -30,5 +30,23 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/combat/battle-view/battle-view.component').then(m => m.BattleViewComponent)
   },
+  {
+    path: 'teams',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/teams/team-list/team-list.component')
+      .then(m => m.TeamListComponent)
+  },
+  {
+    path: 'teams/:teamId',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/teams/team-detail/team-detail.component')
+      .then(m => m.TeamDetailComponent)
+  },
+  {
+    path: 'teams/:teamId/complete',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/teams/team-complete/team-complete.component')
+      .then(m => m.TeamCompleteComponent)
+  },
   { path: '**', redirectTo: '' }
 ];
