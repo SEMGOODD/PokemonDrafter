@@ -23,30 +23,7 @@ data:
   KEYCLOAK_URL: "http://keycloak:8080"
   POKEAPI_BASE_URL: "https://pokeapi.co/api/v2"
 
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: keycloak-realm
-  namespace: pokemon-drafter
-data:
-  realm-export.json: |
-    {"realm":"pokemon-drafter",
-    "enabled":true,
-    "displayName":"Pokemon Drafter",
-    "registrationAllowed":true,
-    "loginWithEmailAllowed":true,
-    "duplicateEmailsAllowed":false,
-    "resetPasswordAllowed":true,
-    "editUsernameAllowed":false,
-    "bruteForceProtected":false,
-    "sslRequired":"none",
-    "accessTokenLifespan":3600,
-    "ssoSessionIdleTimeout":1800,
-    "ssoSessionMaxLifespan":36000,
-    "roles":{"realm":[{"name":"red_player","description":"Red team player role","composite":false,"clientRole":false},{"name":"blue_player","description":"Blue team player role","composite":false,"clientRole":false},{"name":"admin","description":"Administrator role","composite":false,"clientRole":false}]},"clients":[{"clientId":"gateway-client","name":"API Gateway Client","enabled":true,"clientAuthenticatorType":"client-secret","secret":"gateway-secret-key","redirectUris": ["http://localhost:4200/*","http://localhost:4201/*","http://localhost:4202/*"],"webOrigins": ["http://localhost:4200","http://localhost:4201","http://localhost:4202"],"publicClient":false,"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"serviceAccountsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email"]},{"clientId":"frontend-client","name":"Frontend Client","enabled":true,"publicClient":true,"redirectUris": ["http://localhost:4200/*","http://localhost:4201/*","http://localhost:4202/*"],"webOrigins": ["http://localhost:4200","http://localhost:4201","http://localhost:4202"],"protocol":"openid-connect","standardFlowEnabled":true,"directAccessGrantsEnabled":true,"fullScopeAllowed":true,"defaultClientScopes":["web-origins","acr","profile","roles","email","openid"]}],"users":[{"username":"red_player1","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player1","email":"red_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"red_player2","enabled":true,"emailVerified":true,"firstName":"Red","lastName":"Player2","email":"red_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["red_player","default-roles-pokemon-drafter"]},{"username":"blue_player1","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player1","email":"blue_player1@pokemon-drafter.local","credentials":[{"type":"password","value":"password1","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"blue_player2","enabled":true,"emailVerified":true,"firstName":"Blue","lastName":"Player2","email":"blue_player2@pokemon-drafter.local","credentials":[{"type":"password","value":"password2","temporary":false}],"realmRoles":["blue_player","default-roles-pokemon-drafter"]},{"username":"admin","enabled":true,"emailVerified":true,"firstName":"Admin","lastName":"User","email":"admin@pokemon-drafter.local","credentials":[{"type":"password","value":"admin","temporary":false}],"realmRoles":["admin","default-roles-pokemon-drafter"]}]}
-
-
+# keycloak-realm ConfigMap: generated in keycloak-realm.yml by sync-realm.sh
 
 # PERSISTENT VOLUME CLAIMS
 
@@ -99,7 +76,10 @@ metadata:
   name: pokemon-drafter-ingress
   namespace: pokemon-drafter
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Keycloak sends large headers; the chat WebSocket stays open for the whole battle.
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   ingressClassName: nginx
   rules:
@@ -113,41 +93,65 @@ spec:
             name: front-general-service
             port:
               number: 80
-      - path: /red
+  - host: red.pokemon-drafter.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: front-red-service
             port:
               number: 80
-      - path: /blue
+  - host: blue.pokemon-drafter.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: front-blue-service
             port:
               number: 80
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: gateway-service
-            port:
-              number: 80
-      - path: /auth
-        pathType: Prefix
-        backend:
-          service:
-            name: keycloak
-            port:
-              number: 8080
-      - path: /ws
+  - host: api.pokemon-drafter.local
+    http:
+      paths:
+      # Browsers cannot send an Authorization header on a WebSocket, so the chat
+      # skips the gateway and checks the token itself.
+      - path: /api/chat
         pathType: Prefix
         backend:
           service:
             name: chat-service
             port:
               number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service
+            port:
+              number: 80
+  - host: auth.pokemon-drafter.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8080
+  - host: mail.pokemon-drafter.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mailpit
+            port:
+              number: 8025
 
 
 # KAFKA
@@ -389,6 +393,8 @@ spec:
               value: "admin"
             - name: KC_DB_PASSWORD
               value: "1234"
+            - name: KC_PROXY_HEADERS
+              value: "xforwarded"
           volumeMounts:
             - name: keycloak-realm
               mountPath: /opt/keycloak/data/import
@@ -441,7 +447,7 @@ spec:
                 name: app-config
           env:
             - name: CORS_ALLOWED_ORIGINS
-              value: "http://localhost:4200,http://localhost:4201,http://localhost:4202,http://pokemon-drafter.local,http://192.168.49.2:30001,http://192.168.49.2:30003,http://192.168.49.2:30004"
+              value: "http://pokemon-drafter.local,http://red.pokemon-drafter.local,http://blue.pokemon-drafter.local"
             - name: KEYCLOAK_REALM
               value: "pokemon-drafter"
             - name: KEYCLOAK_ADMIN_USERNAME
@@ -625,6 +631,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          env:
+            - name: COMBAT_SERVICE_URL
+              value: "http://combat-service:8000"
           readinessProbe:
             httpGet:
               path: /health
@@ -736,19 +745,19 @@ spec:
             - containerPort: 80
           env:
             - name: GATEWAY_URL
-              value: "http://localhost:8000"
+              value: "http://api.pokemon-drafter.local"
             - name: KEYCLOAK_URL
-              value: "http://localhost:8080"
+              value: "http://auth.pokemon-drafter.local"
             - name: KEYCLOAK_REALM
               value: "pokemon-drafter"
             - name: KEYCLOAK_CLIENT_ID
               value: "frontend-client"
             - name: FRONT_RED_URL
-              value: "http://localhost:4201"
+              value: "http://red.pokemon-drafter.local"
             - name: FRONT_BLUE_URL
-              value: "http://localhost:4202"
+              value: "http://blue.pokemon-drafter.local"
             - name: CHAT_WS_URL
-              value: "ws://localhost:8006"
+              value: "ws://api.pokemon-drafter.local"
 
 # FRONTEND RED
 
@@ -793,17 +802,17 @@ spec:
             - name: COLOR
               value: "red"
             - name: GATEWAY_URL
-              value: "http://localhost:8000"
+              value: "http://api.pokemon-drafter.local"
             - name: KEYCLOAK_URL
-              value: "http://localhost:8080"
+              value: "http://auth.pokemon-drafter.local"
             - name: KEYCLOAK_REALM
               value: "pokemon-drafter"
             - name: KEYCLOAK_CLIENT_ID
               value: "frontend-client"
             - name: FRONT_GENERAL_URL
-              value: "http://localhost:4200"
+              value: "http://pokemon-drafter.local"
             - name: CHAT_WS_URL
-              value: "ws://localhost:8006"
+              value: "ws://api.pokemon-drafter.local"
 
 # FRONTEND BLUE
 
@@ -848,14 +857,57 @@ spec:
             - name: COLOR
               value: "blue"
             - name: GATEWAY_URL
-              value: "http://localhost:8000"
+              value: "http://api.pokemon-drafter.local"
             - name: KEYCLOAK_URL
-              value: "http://localhost:8080"
+              value: "http://auth.pokemon-drafter.local"
             - name: KEYCLOAK_REALM
               value: "pokemon-drafter"
             - name: KEYCLOAK_CLIENT_ID
               value: "frontend-client"
             - name: FRONT_GENERAL_URL
-              value: "http://localhost:4200"
+              value: "http://pokemon-drafter.local"
             - name: CHAT_WS_URL
-              value: "ws://localhost:8006"
+              value: "ws://api.pokemon-drafter.local"
+
+# MAILPIT (fake SMTP for Keycloak emails, inbox on mail.pokemon-drafter.local)
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  namespace: pokemon-drafter
+spec:
+  type: ClusterIP
+  selector:
+    app: mailpit
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: 1025
+    - name: ui
+      port: 8025
+      targetPort: 8025
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  namespace: pokemon-drafter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+        - name: mailpit
+          image: axllent/mailpit
+          ports:
+            - containerPort: 1025
+            - containerPort: 8025

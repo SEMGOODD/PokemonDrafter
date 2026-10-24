@@ -68,6 +68,9 @@ logs:
     topic: logs-service
     threshold: INFO
 
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4201,http://localhost:4202}
+
 keycloak:
   url: ${KEYCLOAK_URL}
   realm: ${KEYCLOAK_REALM:pokemon-drafter}
