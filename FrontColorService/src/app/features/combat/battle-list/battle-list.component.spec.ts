@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { APP_ENV } from '../../../core/env/app-env';
 import { AuthService } from '../../../core/auth/auth.service';
 import { createColorAppEnv } from '../../../../testing/color-app-env.stub';
+import { createAuthServiceStub } from '../../../../testing/auth-service.stub';
 import { BattleListComponent } from './battle-list.component';
 
 const MOCK_GATEWAY = 'http://gateway.test';
@@ -21,7 +22,7 @@ describe('BattleListComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: APP_ENV, useValue: createColorAppEnv('red') },
-        { provide: AuthService, useValue: { getPlayerId: (): string => 'me' } }
+        { provide: AuthService, useValue: createAuthServiceStub('me') }
       ]
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);

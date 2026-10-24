@@ -51,10 +51,12 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "gateway-secret-key",
       "redirectUris": [
-        "http://localhost:8000/*"
+        "http://localhost:8000/*",
+        "http://api.pokemon-drafter.local/*"
       ],
       "webOrigins": [
-        "http://localhost:8000"
+        "http://localhost:8000",
+        "http://api.pokemon-drafter.local"
       ],
       "publicClient": false,
       "protocol": "openid-connect",
@@ -81,13 +83,17 @@
         "http://localhost:4200/*",
         "http://localhost:4201/*",
         "http://localhost:4202/*",
-        "http://pokemon-drafter.local/*"
+        "http://pokemon-drafter.local/*",
+        "http://red.pokemon-drafter.local/*",
+        "http://blue.pokemon-drafter.local/*"
       ],
       "webOrigins": [
         "http://localhost:4200",
         "http://localhost:4201",
         "http://localhost:4202",
-        "http://pokemon-drafter.local"
+        "http://pokemon-drafter.local",
+        "http://red.pokemon-drafter.local",
+        "http://blue.pokemon-drafter.local"
       ],
       "protocol": "openid-connect",
       "standardFlowEnabled": true,

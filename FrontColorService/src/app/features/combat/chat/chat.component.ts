@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { APP_ENV } from '../../../core/env/app-env';
+import { AuthService } from '../../../core/auth/auth.service';
 
 interface ChatMessage {
   type: 'chat' | 'system';
@@ -40,6 +41,7 @@ export class ChatComponent implements OnInit, OnDestroy, OnChanges, AfterViewChe
 
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly env = inject(APP_ENV);
+  private readonly auth = inject(AuthService);
 
   readonly messages = signal<ChatMessage[]>([]);
   readonly connected = signal(false);
@@ -75,16 +77,17 @@ export class ChatComponent implements OnInit, OnDestroy, OnChanges, AfterViewChe
   private openSocket(): void {
     console.log('CHAT_WS_URL from env:', this.env.CHAT_WS_URL);
     console.log('full env:', this.env);
-    if (!this.combatId || !this.userId || !this.myColor) return;
+    const token = this.auth.getToken();
+    if (!this.combatId || !this.userId || !this.myColor || !token) return;
 
     const base = this.env.CHAT_WS_URL ?? this.deriveWsBase();
-    const url = `${base}/api/chat/${encodeURIComponent(this.combatId)}` +
-      `?userId=${encodeURIComponent(this.userId)}` +
-      `&color=${encodeURIComponent(this.myColor)}`;
+    const url = `${base}/api/chat/${encodeURIComponent(this.combatId)}`;
 
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
+      // Le chat-service attend le jeton dans la premiere trame et deduit pseudo et couleur cote serveur.
+      this.ws?.send(JSON.stringify({ type: 'auth', token }));
       this.connected.set(true);
       this.cdr.markForCheck();
     };

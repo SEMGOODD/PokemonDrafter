@@ -122,7 +122,13 @@ Tutoriel pas-à-pas selon ton shell :
 - **Linux / macOS / Git Bash** → [k8s/RUNBOOK-linux.md](k8s/RUNBOOK-linux.md)
 - **Windows PowerShell** → [k8s/RUNBOOK-windows.md](k8s/RUNBOOK-windows.md)
 
-Les deux runbooks couvrent : build des images dans le daemon Docker de minikube, déploiement, port-forwards (rappel **important** pour conserver les ports navigateur), surveillance des pods, dépannage Kafka, reset PVC, tear down.
+En résumé : activer l'addon Ingress, builder les images dans le daemon Docker de minikube, puis déployer en une commande et configurer le DNS local (voir [DNS Kubernetes](#dns-kubernetes)) :
+
+```bash
+kubectl apply -f k8s/ -n pokemon-drafter
+```
+
+Les runbooks couvrent aussi la surveillance des pods, le dépannage Kafka, le reset des PVC et le tear down.
 
 ---
 
@@ -139,6 +145,8 @@ Définis dans `keycloak/realm-export.json` (importés au premier démarrage).
 | `admin` | `admin` | Administrateur |
 
 > Si tu modifies `realm-export.json`, Keycloak ne ré-importe **qu'au premier démarrage avec base vide**. Pour réimporter : `docker compose down -v && docker compose up --build`.
+>
+> Ce fichier est la seule source du realm. Kubernetes le reçoit via `k8s/keycloak-realm.yml`, généré par `./k8s/sync-realm.sh` : relancer le script après chaque modification et commiter les deux fichiers.
 
 ---
 
@@ -149,10 +157,12 @@ Définis dans `keycloak/realm-export.json` (importés au premier démarrage).
 | Recherche Pokédex | `GET /api/pokemon/**`, `GET /api/types/**` | publique |
 | Login / signup / reset | `POST /api/auth/**` | publique |
 | Combat | `/api/combat/**` | JWT requis |
-| Chat WebSocket | `/api/chat/**` | JWT requis |
+| Chat WebSocket | `/api/chat/{combatId}` (chat-service en direct) | JWT requis + participant du combat |
 | Console logs admin | `/api/logs/**` | JWT + rôle `admin` |
 
 L'extraction du rôle Keycloak (claim `realm_access.roles`) est faite par `SecurityConfig` côté gateway et redoublée côté `logs-service` (défense en profondeur).
+
+Le chat ne passe pas par la gateway : un navigateur ne peut pas envoyer d'en-tête `Authorization` sur un WebSocket. Le front envoie donc le jeton dans la première trame (`{"type": "auth", "token": "..."}`), jamais dans l'URL. `chat-service` vérifie la signature du jeton avec les clés publiques de Keycloak, en tire le pseudo, puis demande à `combat-service` si ce joueur est Rouge ou Bleu dans ce combat. Le client ne choisit ni son pseudo ni sa couleur ; un non-participant est refusé (code 1008).
 
 ---
 
@@ -206,12 +216,6 @@ Pour faciliter l'évaluation, les écarts entre le PDF et la livraison actuelle 
 
 ---
 
-## Conventions de code
-
-Voir [CLAUDE.md](CLAUDE.md) (règles non négociables : aucune émoji dans le code, aucun chiffre magique, single responsibility, zéro warning de build).
-
----
-
 ## Assets tiers & licences
 
 | Asset | Source | Licence | Emplacement |
@@ -224,10 +228,25 @@ Le texte de la licence MIT est conservé à côté des icônes (`images/icons/LI
 
 ## DNS Kubernetes
 
-Configurer une entrée DNS locale pointant sur l'IP LoadBalancer de la gateway :
+L'Ingress nginx de minikube (`minikube addons enable ingress`) route chaque sous-domaine vers son service :
 
-```
-<gateway-external-ip>  pokemon-drafter.local
-```
+| URL | Service |
+|---|---|
+| http://pokemon-drafter.local | Front général (point d'entrée) |
+| http://red.pokemon-drafter.local | Front Rouge |
+| http://blue.pokemon-drafter.local | Front Bleu |
+| http://api.pokemon-drafter.local | Gateway ; `/api/chat` va directement à chat-service (WebSocket) |
+| http://auth.pokemon-drafter.local | Keycloak (`admin` / `admin`) |
+| http://mail.pokemon-drafter.local | Mailpit (emails Keycloak) |
 
-Accès : `http://pokemon-drafter.local`.
+Ajouter ces noms au fichier hosts, après `kubectl apply -f k8s/ -n pokemon-drafter` :
+
+- **Linux** : l'IP de minikube est joignable directement.
+
+  ```bash
+  echo "$(minikube ip) pokemon-drafter.local red.pokemon-drafter.local blue.pokemon-drafter.local api.pokemon-drafter.local auth.pokemon-drafter.local mail.pokemon-drafter.local" | sudo tee -a /etc/hosts
+  ```
+
+- **macOS / Windows** (driver Docker) : lancer `minikube tunnel` dans un terminal laissé ouvert (administrateur sous Windows), et pointer les mêmes noms sur `127.0.0.1` (`/etc/hosts`, ou `C:\Windows\System32\drivers\etc\hosts`).
+
+Accès : http://pokemon-drafter.local. Détail pas-à-pas dans les runbooks.

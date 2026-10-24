@@ -6,11 +6,16 @@ Commandes pour déployer et dépanner l'application sur minikube depuis **PowerS
 
 ---
 
-## 1. Démarrer minikube
+## 1. Démarrer minikube et activer l'Ingress
 
 ```powershell
 minikube start --memory=4096 --cpus=4
+minikube addons enable ingress
+kubectl wait --namespace ingress-nginx --for=condition=ready pod `
+  --selector=app.kubernetes.io/component=controller --timeout=300s
 ```
+
+Attendre que le contrôleur Ingress soit prêt avant l'étape 3 : sinon `kubectl apply` échoue sur le webhook de l'Ingress.
 
 ## 2. Construire les images dans le daemon Docker de minikube
 
@@ -36,37 +41,40 @@ $env:DOCKER_HOST   # doit afficher l'endpoint du daemon minikube
 docker images      # doit lister les images que tu viens de builder
 ```
 
-## 3. Créer le namespace et appliquer le manifest
+## 3. Déployer
+
+Une seule commande, qui crée aussi le namespace (`k8s/00-namespace.yml` est appliqué en premier) :
 
 ```powershell
-kubectl create namespace pokemon-drafter
-kubectl apply -f k8s/manifest.yml
+kubectl apply -f k8s/ -n pokemon-drafter
 ```
 
-## 4. Ouvrir les port-forwards (IMPORTANT — conserve les mêmes URLs navigateur)
+## 4. Configurer le DNS local
 
-Le script `port-forward.sh` est bash uniquement. En PowerShell, lance les port-forwards en jobs background :
+L'application répond sur ces noms, routés par l'Ingress :
+
+| URL | Service |
+|---|---|
+| http://pokemon-drafter.local | Front général |
+| http://red.pokemon-drafter.local | Front Rouge |
+| http://blue.pokemon-drafter.local | Front Bleu |
+| http://api.pokemon-drafter.local | Gateway (+ WebSocket chat sur `/api/chat`) |
+| http://auth.pokemon-drafter.local | Keycloak |
+| http://mail.pokemon-drafter.local | Mailpit (emails Keycloak) |
+
+Avec le driver Docker, l'IP de minikube n'est pas joignable depuis Windows : passer par le tunnel. Dans un PowerShell **administrateur**, laissé ouvert :
 
 ```powershell
-$ns = "pokemon-drafter"
-Start-Job -Name pf-front-general { kubectl port-forward -n $using:ns svc/front-general-service 4200:80 }
-Start-Job -Name pf-front-red     { kubectl port-forward -n $using:ns svc/front-red-service     4201:80 }
-Start-Job -Name pf-front-blue    { kubectl port-forward -n $using:ns svc/front-blue-service    4202:80 }
-Start-Job -Name pf-gateway       { kubectl port-forward -n $using:ns svc/gateway-service       8000:80 }
-Start-Job -Name pf-keycloak      { kubectl port-forward -n $using:ns svc/keycloak              8080:8080 }
-Start-Job -Name pf-chat          { kubectl port-forward -n $using:ns svc/chat-service          8006:8000 }
-
-Get-Job   # vérifier que tous les jobs tournent (State = Running)
+minikube tunnel
 ```
 
-Pour tout arrêter :
+Puis, dans un PowerShell **administrateur**, ajouter les noms au fichier hosts :
 
 ```powershell
-Get-Job | Stop-Job
-Get-Job | Remove-Job
+Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "127.0.0.1 pokemon-drafter.local red.pokemon-drafter.local blue.pokemon-drafter.local api.pokemon-drafter.local auth.pokemon-drafter.local mail.pokemon-drafter.local"
 ```
 
-> Alternative : si tu as Git Bash ou WSL, exécute `./k8s/port-forward.sh` dedans — c'est plus simple.
+Ouvrir ensuite http://pokemon-drafter.local.
 
 ## 5. Surveiller les pods
 
@@ -74,7 +82,19 @@ Get-Job | Remove-Job
 kubectl get pods -n pokemon-drafter -w
 ```
 
-## 6. À la fin de la session — libérer le shell de minikube
+Keycloak est le plus long à démarrer (~1-2 min).
+
+## 6. Modifier le realm Keycloak
+
+Le realm a une seule source : `keycloak/realm-export.json` (utilisé tel quel par Docker Compose). Pour Kubernetes, régénérer le ConfigMap après chaque modification et commiter les deux fichiers. Le script est en bash : le lancer depuis Git Bash ou WSL.
+
+```bash
+./k8s/sync-realm.sh
+```
+
+Keycloak n'importe le realm qu'au premier démarrage avec une base vide : pour réimporter, supprimer le PVC Postgres (voir section 12).
+
+## 7. À la fin de la session — libérer le shell de minikube
 
 À exécuter une fois que tu as fini de builder/déployer, pour que `docker` reparle au daemon hôte (Docker Desktop) :
 
@@ -82,7 +102,7 @@ kubectl get pods -n pokemon-drafter -w
 minikube docker-env --shell powershell --unset | Invoke-Expression
 ```
 
-## 7. Diagnostic d'un pod qui crashe
+## 8. Diagnostic d'un pod qui crashe
 
 ```powershell
 kubectl describe pod -l app=<service-name> -n pokemon-drafter
@@ -91,19 +111,19 @@ kubectl logs -l app=<service-name> -n pokemon-drafter --previous
 kubectl describe pod -l app=<service-name> -n pokemon-drafter | Select-String -Context 0,10 "Readiness"
 ```
 
-## 8. Reset Kafka si crash en boucle
+## 9. Reset Kafka si crash en boucle
 
 ```powershell
 kubectl delete deployment kafka -n pokemon-drafter
 Start-Job { kubectl delete pvc kafka-pvc -n pokemon-drafter }
 kubectl delete pod -l app=kafka -n pokemon-drafter --force --grace-period=0
 Start-Sleep -Seconds 10
-kubectl apply -f k8s/manifest.yml
+kubectl apply -f k8s/ -n pokemon-drafter
 kubectl get pvc -n pokemon-drafter
 kubectl logs -l app=kafka -n pokemon-drafter -f
 ```
 
-## 9. ReplicaSets en double
+## 10. ReplicaSets en double
 
 ```powershell
 kubectl get replicasets -n pokemon-drafter
@@ -112,17 +132,27 @@ kubectl scale replicaset <old-replicaset-name> --replicas=0 -n pokemon-drafter
 kubectl rollout restart deployment/<service-name> -n pokemon-drafter
 ```
 
-## 10. État global
+## 11. État global
 
 ```powershell
 kubectl get all -n pokemon-drafter
 kubectl get pvc -n pokemon-drafter
+kubectl get ingress -n pokemon-drafter
 ```
 
-## 11. Tout détruire
+## 12. Reset Postgres (réimport du realm, bases vides)
 
 ```powershell
-Get-Job | Stop-Job; Get-Job | Remove-Job
+kubectl delete deployment postgres keycloak -n pokemon-drafter
+kubectl delete pvc postgres-pvc -n pokemon-drafter
+kubectl apply -f k8s/ -n pokemon-drafter
+```
+
+## 13. Tout détruire
+
+```powershell
 kubectl delete namespace pokemon-drafter
 minikube stop
 ```
+
+Arrêter `minikube tunnel` (Ctrl+C) et retirer la ligne `pokemon-drafter.local` du fichier hosts.

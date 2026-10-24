@@ -10,28 +10,34 @@ Real-time per-duel chat built with **Python + FastAPI + WebSockets + Kafka**.
 |---|---|
 | Real-time message delivery | WebSocket, one room per `combat_id` |
 | Persistence handoff | Publishes every message to Kafka `chat` topic |
-| Auth | Trusts `X-User-Id` / `X-User-Color` headers injected by the API Gateway |
+| Auth | Keycloak access token in the first frame; colour resolved from combat-service |
 
 ---
 
 ## WebSocket endpoint
 
 ```
-ws://localhost:8000/api/chat/{combat_id}
+ws://localhost:8006/api/chat/{combat_id}          (Docker Compose)
+ws://api.pokemon-drafter.local/api/chat/{combat_id} (Kubernetes, Ingress → chat-service)
 ```
 
-The gateway proxies this as:
+Browsers cannot send an `Authorization` header on a WebSocket, so the fronts connect to chat-service directly, not through the gateway.
 
+### Authentication (first frame)
+
+The first frame must carry the player's Keycloak access token. Nothing goes in the URL, so the token never lands in access logs.
+
+```json
+{ "type": "auth", "token": "<keycloak access token>" }
 ```
-ws://localhost:8000/api/chat/{combat_id}   →   ws://chat-service:8000/api/chat/{combat_id}
-```
 
-### Required headers (injected by gateway)
+chat-service then ([app/auth.py](app/auth.py)):
 
-| Header | Example |
-|---|---|
-| `X-User-Id` | `red_player1` |
-| `X-User-Color` | `red` or `blue` |
+1. checks the token signature and expiry against Keycloak's public keys (`/realms/{realm}/protocol/openid-connect/certs`);
+2. takes the pseudo from the `preferred_username` claim;
+3. calls `GET {COMBAT_SERVICE_URL}/combat/battle/{combat_id}` with the same token: combat-service answers 403 to non-participants, and the response says whether the player is Red or Blue.
+
+Any failure, or no auth frame within 10 s, closes the socket with code `1008` (policy violation).
 
 ### Client → Server message
 
@@ -88,6 +94,9 @@ Les évènements applicatifs (connexion/déconnexion WebSocket, erreurs) sont pu
 | Variable | Default | Description |
 |---|---|---|
 | `KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092` | Kafka broker address |
+| `KEYCLOAK_URL` | `http://keycloak:8080` | In-cluster Keycloak, used to fetch the token signing keys |
+| `KEYCLOAK_REALM` | `pokemon-drafter` | Realm whose keys sign the tokens |
+| `COMBAT_SERVICE_URL` | `http://combat-service:8000` | Used to resolve the player's colour in the battle |
 
 ---
 
@@ -102,25 +111,6 @@ Health check: `GET http://localhost:8000/health`
 
 ---
 
-## Gateway changes required
-
-### 1. `application.yml` — add chat route
-
-```yaml
-- id: chat-route
-  uri: ${CHAT_SERVICE_URL:http://chat-service:8000}
-  predicates:
-    - Path=/api/chat/**
-```
-
-### 2. New filter — `UserHeaderInjectionFilter.java`
-
-Drop `UserHeaderInjectionFilter.java` into `com.example.Gateway.filter`.  
-It reads `preferred_username` and `realm_access.roles` from the validated JWT  
-and injects `X-User-Id` and `X-User-Color` headers for all downstream services.
-
----
-
 ## docker-compose snippet
 
 ```yaml
@@ -130,9 +120,12 @@ chat-service:
   ports:
     - "8006:8000"
   depends_on:
-    - kafka
+    kafka:
+      condition: service_healthy
   environment:
     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    KEYCLOAK_URL: http://keycloak:8080
+    COMBAT_SERVICE_URL: http://combat-service:8000
   networks:
     - pokemon-net
 ```
