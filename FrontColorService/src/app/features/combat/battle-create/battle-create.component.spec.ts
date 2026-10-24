@@ -9,6 +9,7 @@ import { CombatApiService } from '../../../core/api/combat-api.service';
 import { UserApiService } from '../../../core/api/user-api.service';
 import { Battle } from '../../../shared/types/combat.types';
 import { createColorAppEnv } from '../../../../testing/color-app-env.stub';
+import { createAuthServiceStub } from '../../../../testing/auth-service.stub';
 import { BattleCreateComponent } from './battle-create.component';
 
 const minimalBattle: Battle = {
@@ -45,7 +46,7 @@ describe('BattleCreateComponent', () => {
       providers: [
         provideRouter([]),
         { provide: APP_ENV, useValue: createColorAppEnv('red') },
-        { provide: AuthService, useValue: { getPlayerId: (): string => 'me' } },
+        { provide: AuthService, useValue: createAuthServiceStub('me') },
         {
           provide: UserApiService,
           useValue: {

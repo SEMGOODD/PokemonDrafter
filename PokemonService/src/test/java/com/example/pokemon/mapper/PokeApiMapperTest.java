@@ -4,8 +4,8 @@ import com.example.pokemon.model.NameIndexEntry;
 import com.example.pokemon.model.Pokemon;
 import com.example.pokemon.model.PokemonSummary;
 import com.example.pokemon.model.Species;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,7 +67,7 @@ class PokeApiMapperTest {
 			  "habitat": { "name": "forest" },
 			  "flavor_text_entries": [
 			    { "flavor_text": "When several\\nof these POKeMON\\fgather", "language": { "name": "en" } },
-			    { "flavor_text": "FR text", "language": { "name": "fr" } }
+			    { "flavor_text": "Quand plusieurs\\nde ces POKeMON\\fse rassemblent", "language": { "name": "fr" } }
 			  ]
 			}
 			""";
@@ -138,7 +138,7 @@ class PokeApiMapperTest {
 		Species species = mapper.toSpecies(PIKACHU_SPECIES_ID, speciesNode);
 
 		assertEquals(PIKACHU_SPECIES_ID, species.id());
-		assertEquals("When several of these POKeMON gather", species.description());
+		assertEquals("Quand plusieurs de ces POKeMON se rassemblent", species.description());
 		assertEquals("forest", species.habitat());
 	}
 

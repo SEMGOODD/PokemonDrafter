@@ -62,6 +62,7 @@ describe('PokedexDetailComponent', () => {
     const request = httpMock.expectOne(`${MOCK_GATEWAY}/api/pokemon/7`);
     expect(request.request.method).toBe('GET');
     request.flush(samplePokemon);
+    httpMock.expectOne(`${MOCK_GATEWAY}/api/teams`).flush([]);
     await fixture.whenStable();
     TestBed.flushEffects();
     fixture.detectChanges();

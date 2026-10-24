@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { vi } from 'vitest';
 
 import { APP_ENV } from '../../core/env/app-env';
 import { AuthService } from '../../core/auth/auth.service';
 import { createColorAppEnv } from '../../../testing/color-app-env.stub';
+import { createAuthServiceStub } from '../../../testing/auth-service.stub';
 import { HomeComponent } from './home.component';
 
 describe('HomeComponent', () => {
@@ -15,7 +15,7 @@ describe('HomeComponent', () => {
         providers: [
           provideRouter([]),
           { provide: APP_ENV, useValue: createColorAppEnv('red') },
-          { provide: AuthService, useValue: { isLoggedIn: vi.fn().mockReturnValue(false) } }
+          { provide: AuthService, useValue: createAuthServiceStub(null) }
         ]
       }).compileComponents();
     });
@@ -34,7 +34,7 @@ describe('HomeComponent', () => {
         providers: [
           provideRouter([]),
           { provide: APP_ENV, useValue: createColorAppEnv('red') },
-          { provide: AuthService, useValue: { isLoggedIn: vi.fn().mockReturnValue(true) } }
+          { provide: AuthService, useValue: createAuthServiceStub('me') }
         ]
       }).compileComponents();
     });

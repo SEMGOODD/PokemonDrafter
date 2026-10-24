@@ -7,6 +7,7 @@ import { APP_ENV } from '../../../core/env/app-env';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Battle } from '../../../shared/types/combat.types';
 import { createColorAppEnv } from '../../../../testing/color-app-env.stub';
+import { createAuthServiceStub } from '../../../../testing/auth-service.stub';
 import { BattleViewComponent } from './battle-view.component';
 
 const MOCK_GATEWAY = 'http://gateway.test';
@@ -42,7 +43,7 @@ describe('BattleViewComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: APP_ENV, useValue: createColorAppEnv('red') },
-        { provide: AuthService, useValue: { getPlayerId: (): string => 'me' } },
+        { provide: AuthService, useValue: createAuthServiceStub('me') },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: convertToParamMap({ id: 'b99' }) } }
@@ -61,6 +62,7 @@ describe('BattleViewComponent', () => {
     const fixture = TestBed.createComponent(BattleViewComponent);
     fixture.detectChanges();
     httpMock.expectOne(`${MOCK_GATEWAY}/api/combat/battle/b99`).flush(finishedBattle);
+    httpMock.expectOne(`${MOCK_GATEWAY}/api/teams`).flush([]);
     fixture.detectChanges();
     expect(fixture.componentInstance).toBeTruthy();
   });
@@ -70,6 +72,7 @@ describe('BattleViewComponent', () => {
     const fixture = TestBed.createComponent(BattleViewComponent);
     fixture.detectChanges();
     httpMock.expectOne(`${MOCK_GATEWAY}/api/combat/battle/b99`).flush(finishedBattle);
+    httpMock.expectOne(`${MOCK_GATEWAY}/api/teams`).flush([]);
     fixture.detectChanges();
     expect(fixture.componentInstance.battle()?.battleId).toBe('b99');
   });
