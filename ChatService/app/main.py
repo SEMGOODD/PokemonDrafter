@@ -1,18 +1,22 @@
+import asyncio
 import json
 import logging
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.auth import ChatAuthError, ChatIdentity, authenticate
 from app.kafka_producer import KafkaProducerClient
 from app.kafka_consumer import KafkaChatConsumer
 from app.room_manager import RoomManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+AUTH_FRAME_TYPE = "auth"
+AUTH_TIMEOUT_SECONDS = 10
 
 room_manager = RoomManager()
 kafka_producer = KafkaProducerClient()
@@ -58,22 +62,37 @@ async def health():
     return JSONResponse({"status": "UP"})
 
 
+async def receive_identity(websocket: WebSocket, combat_id: str) -> ChatIdentity:
+    # Browsers cannot set headers on a WebSocket, so the token comes in the first
+    # frame rather than the URL, which would leak it into access logs.
+    raw = await asyncio.wait_for(websocket.receive_text(), AUTH_TIMEOUT_SECONDS)
+    try:
+        frame = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ChatAuthError("first frame is not JSON") from e
+
+    if not isinstance(frame, dict) or frame.get("type") != AUTH_FRAME_TYPE:
+        raise ChatAuthError("first frame must be an auth frame")
+    token = frame.get("token")
+    if not isinstance(token, str) or not token:
+        raise ChatAuthError("auth frame has no token")
+    return await authenticate(token, combat_id)
+
+
 @app.websocket("/api/chat/{combat_id}")
 async def websocket_chat(websocket: WebSocket, combat_id: str):
-    user_id = websocket.headers.get("x-user-id") or websocket.query_params.get("userId")
-    user_color = websocket.headers.get("x-user-color") or websocket.query_params.get("color")
-
-    if not user_id or not user_color:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        logger.warning("WebSocket rejected — missing X-User-Id or X-User-Color headers")
-        return
-
-    if user_color not in ("red", "blue"):
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        logger.warning(f"WebSocket rejected — invalid color '{user_color}' for user '{user_id}'")
-        return
-
     await websocket.accept()
+    try:
+        identity = await receive_identity(websocket, combat_id)
+    except WebSocketDisconnect:
+        return
+    except (ChatAuthError, asyncio.TimeoutError) as e:
+        logger.warning(f"[{combat_id}] WebSocket rejected — {str(e) or 'no auth frame in time'}")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    user_id = identity.user_id
+    user_color = identity.color
     logger.info(f"[{combat_id}] {user_id} ({user_color}) connected")
     await kafka_producer.publish_log(
         level="INFO",
