@@ -179,6 +179,9 @@ metadata:
   namespace: pokemon-drafter
 spec:
   replicas: 1
+  # The volume can only be attached to one pod: stop the old pod before starting the new one.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: kafka
@@ -187,6 +190,9 @@ spec:
       labels:
         app: kafka
     spec:
+      # Kafka runs as uid/gid 1000; a fresh EBS volume belongs to root.
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: kafka
           image: apache/kafka:3.9.0
@@ -224,8 +230,9 @@ spec:
               value: "MkU3OEVBNTcwNTJENDM2Qk"
             - name: KAFKA_HEAP_OPTS
               value: "-Xmx512m -Xms256m"
+            # Subfolder: an EBS volume root contains lost+found, which Kafka rejects.
             - name: KAFKA_LOG_DIRS
-              value: "/var/lib/kafka/data"
+              value: "/var/lib/kafka/data/logs"
           resources:
             requests:
               memory: "512Mi"
@@ -265,6 +272,8 @@ metadata:
   namespace: pokemon-drafter
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: postgres
@@ -283,6 +292,13 @@ spec:
               value: "admin"
             - name: POSTGRES_PASSWORD
               value: "1234"
+            # Subfolder: initdb refuses a non-empty directory, and an EBS volume root contains lost+found.
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
@@ -320,6 +336,8 @@ metadata:
   namespace: pokemon-drafter
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: redis
@@ -333,6 +351,10 @@ spec:
           image: redis:7-alpine
           ports:
             - containerPort: 6379
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
           volumeMounts:
             - name: redis-storage
               mountPath: /data
@@ -395,6 +417,10 @@ spec:
               value: "1234"
             - name: KC_PROXY_HEADERS
               value: "xforwarded"
+          resources:
+            requests:
+              memory: "640Mi"
+              cpu: "250m"
           volumeMounts:
             - name: keycloak-realm
               mountPath: /opt/keycloak/data/import
@@ -438,7 +464,7 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          image: gateway-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -462,6 +488,10 @@ spec:
               value: "http://chat-service:8000"
             - name: LOGS_SERVICE_URL
               value: "http://logs-service:8000"
+          resources:
+            requests:
+              memory: "320Mi"
+              cpu: "100m"
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -503,7 +533,7 @@ spec:
     spec:
       containers:
         - name: pokemon-service
-          image: pokemon-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-pokemon:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -517,6 +547,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          resources:
+            requests:
+              memory: "320Mi"
+              cpu: "100m"
           readinessProbe:
             tcpSocket:
               port: 8000
@@ -557,7 +591,7 @@ spec:
     spec:
       containers:
         - name: combat-service
-          image: combat-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-combat:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -579,6 +613,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+          resources:
+            requests:
+              memory: "320Mi"
+              cpu: "100m"
           readinessProbe:
             tcpSocket:
               port: 8000
@@ -624,7 +662,7 @@ spec:
           command: ['sh', '-c', 'until nc -z kafka 9092; do echo waiting for kafka; sleep 3; done']
       containers:
         - name: chat-service
-          image: chat-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-chat:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -634,6 +672,10 @@ spec:
           env:
             - name: COMBAT_SERVICE_URL
               value: "http://combat-service:8000"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
           readinessProbe:
             httpGet:
               path: /health
@@ -682,7 +724,7 @@ spec:
     spec:
       containers:
         - name: logs-service
-          image: logs-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-logs:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -697,6 +739,10 @@ spec:
               value: "kafka:9092"
             - name: KEYCLOAK_URL
               value: "http://keycloak:8080"
+          resources:
+            requests:
+              memory: "320Mi"
+              cpu: "100m"
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -739,7 +785,7 @@ spec:
     spec:
       containers:
         - name: front-general-service
-          image: front-general-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-front-general:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
@@ -758,6 +804,10 @@ spec:
               value: "http://blue.pokemon-drafter.local"
             - name: CHAT_WS_URL
               value: "ws://api.pokemon-drafter.local"
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"
 
 # FRONTEND RED
 
@@ -794,7 +844,7 @@ spec:
     spec:
       containers:
         - name: front-red-service
-          image: front-red-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-front-color:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
@@ -813,6 +863,10 @@ spec:
               value: "http://pokemon-drafter.local"
             - name: CHAT_WS_URL
               value: "ws://api.pokemon-drafter.local"
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"
 
 # FRONTEND BLUE
 
@@ -849,7 +903,7 @@ spec:
     spec:
       containers:
         - name: front-blue-service
-          image: front-blue-service:latest
+          image: ghcr.io/semgoodd/pokemondrafter-front-color:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
@@ -868,6 +922,10 @@ spec:
               value: "http://pokemon-drafter.local"
             - name: CHAT_WS_URL
               value: "ws://api.pokemon-drafter.local"
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"
 
 # MAILPIT (fake SMTP for Keycloak emails, inbox on mail.pokemon-drafter.local)
 
@@ -911,3 +969,7 @@ spec:
           ports:
             - containerPort: 1025
             - containerPort: 8025
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"

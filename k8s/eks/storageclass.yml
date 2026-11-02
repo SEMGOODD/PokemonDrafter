@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  fsType: ext4
+  encrypted: "true"
+# Create the volume only once the pod is scheduled, in that node's availability zone.
+volumeBindingMode: WaitForFirstConsumer
+# Deleting the PVC deletes the EBS volume (delete the namespace before the cluster, or volumes stay billed).
+reclaimPolicy: Delete
+allowVolumeExpansion: true

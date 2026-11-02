@@ -24,15 +24,16 @@ Attendre que le contrôleur Ingress soit prêt avant l'étape 3 : sinon `kubectl
 ```powershell
 minikube docker-env --shell powershell | Invoke-Expression
 
-docker build -t gateway-service:latest       ./APIGatewayService
-docker build -t pokemon-service:latest       ./PokemonService
-docker build -t combat-service:latest        ./CombatService
-docker build -t chat-service:latest          ./ChatService
-docker build -t logs-service:latest          ./LogsService
-docker build -t front-general-service:latest ./FrontGeneralService
-docker build -t front-red-service:latest     ./FrontColorService
-docker build -t front-blue-service:latest    ./FrontColorService
+docker build -t ghcr.io/semgoodd/pokemondrafter-gateway:latest       ./APIGatewayService
+docker build -t ghcr.io/semgoodd/pokemondrafter-pokemon:latest       ./PokemonService
+docker build -t ghcr.io/semgoodd/pokemondrafter-combat:latest        ./CombatService
+docker build -t ghcr.io/semgoodd/pokemondrafter-chat:latest          ./ChatService
+docker build -t ghcr.io/semgoodd/pokemondrafter-logs:latest          ./LogsService
+docker build -t ghcr.io/semgoodd/pokemondrafter-front-general:latest ./FrontGeneralService
+docker build -t ghcr.io/semgoodd/pokemondrafter-front-color:latest   ./FrontColorService
 ```
+
+Les fronts Rouge et Bleu partagent la même image : la couleur vient de la variable `COLOR` du manifest. Les noms `ghcr.io/...` sont ceux du registre utilisé sur EKS ; avec `imagePullPolicy: IfNotPresent`, minikube utilise l'image buildée localement sans rien télécharger.
 
 Vérifier que ton shell parle bien au daemon de minikube :
 
