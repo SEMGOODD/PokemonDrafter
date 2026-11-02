@@ -1,0 +1,11 @@
+# Values for the ingress-nginx Helm chart (4.15.1) on EKS. Only what differs from the chart defaults.
+# Your IP is not stored here: pass it at install time with --set (see RUNBOOK-eks.md).
+controller:
+  service:
+    type: LoadBalancer
+    annotations:
+      # Network Load Balancer instead of the default Classic Load Balancer (previous generation).
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    # Who may reach the load balancer. Overridden at install time with your public IP.
+    loadBalancerSourceRanges:
+      - "127.0.0.1/32"
